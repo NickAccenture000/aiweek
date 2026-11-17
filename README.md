@@ -9,22 +9,23 @@ During an incident the SMC operator has to tell ATCO supervisors, engineering an
 No Node, npm or build step. Plain HTML, CSS and JavaScript.
 
 - **App:** double-click `index.html`. Use the "Demo" box (bottom right) → *Simulate record update* to go v1 → v2 → v3.
-- **Tests:** double-click `tests.html`. The tab title and the heading show `PASS 31/31` when everything is green.
+- **Tests:** double-click `tests.html`. The tab title and the heading show `PASS 36/36` when everything is green.
 - Optional: `powershell -ExecutionPolicy Bypass -File serve.ps1` serves the folder on http://localhost:5173 (used for the in-app browser preview).
 
-## Demo script
+## Flow
 
-1. v1 loads, 6 drafts for 5 recipients, all ✅. Expand and approve ATCO and Engineering, then *Send to outbox* → "Initial".
-2. *Simulate record update*: banner shows expected 14:00 → 16:00, datalink operational → unavailable, now major; Management is added (7 recipients).
-3. "✅ 7 ready · ❌ 1 needs you". Press `N`, then *Use record term* on Engineering FR.
-4. Approve all three roles, send → "Update 1".
-5. *Simulate record update* to v3 (no "Next update by" field), approve, send → "Resolved".
+1. **Inbox (left):** incoming incidents. INC00123 is the live one; the other two are placeholders.
+2. **Incident:** the record as a status board, plus *Inform stakeholders* (or *Send update to stakeholders* / *Send resolution notice* after a record change, with a banner of what changed).
+3. **Recipients:** who will be contacted, suggested from the role rules. Tick or untick people to add or remove them (carried over to later updates).
+4. **Messages:** drafts are generated (Writing drafts… → Checking…), then each role card is expanded and approved on its own. *Send to outbox* is enabled once every role is approved and every check passes or is overridden with a reason.
+
+Demo: *Inform stakeholders* → *Generate messages* → approve ATCO and Engineering → send ("Initial"). Use the Demo box (bottom right) → *Simulate record update*, then *Send update to stakeholders*; press `N` on the failing Engineering FR draft and click *Use record term*; approve and send ("Update 1"). Simulate once more for v3 and send ("Resolved").
 
 ## Layout
 
 ```
 index.html, tests.html, styles.css
-src/data/   records, contacts, roleRules, glossary, drafts (JS files that assign to window.SkyNet.data)
+src/data/   records, inbox, contacts, roleRules, glossary, drafts (JS files that assign to window.SkyNet.data)
 src/lib/    recipients, render, checks, diff, label
 src/ui/     app.js (state + actions), views.js (HTML views)
 tests/      runner.js + *.test.js

@@ -1,7 +1,6 @@
 describe("App", function () {
-  var made = [];
-
-  function mount() {
+  // mount(false) opens the incident view; mount() also walks inform -> recipients -> generate.
+  function mount(stayOnIncident) {
     var queue = [];
     var clock = { setTimeout: function (fn) { queue.push(fn); } };
     var root = document.createElement("div");
@@ -15,29 +14,34 @@ describe("App", function () {
         for (var i = 0; i < all.length; i++) if (all[i].textContent.indexOf(text) >= 0) return all[i];
         return null;
       },
+      act: function (name) {
+        var b = root.querySelector("[data-action=\"" + name + "\"]");
+        if (!b) throw new Error("action not found: " + name);
+        if (b.disabled) throw new Error("action disabled: " + name);
+        b.click();
+      },
       click: function (text, within) {
         var b = t.btn(text, within);
         if (!b) throw new Error("button not found: " + text);
         if (b.disabled) throw new Error("button disabled: " + text);
         b.click();
       },
+      round: function () { t.act("inform"); t.act("generate"); t.flush(); },
       card: function (role) { return root.querySelector(".card[data-role=\"" + role + "\"]"); },
       approve: function (role) { t.click("Approve", t.card(role)); },
       expand: function (role) { t.click(SkyNet.lib.roleName(role), t.card(role)); },
       expandAndApproveAll: function () {
-        root.querySelectorAll(".card").forEach(function (c) {
-          var role = c.getAttribute("data-role");
+        Array.prototype.map.call(root.querySelectorAll(".card"), function (c) { return c.getAttribute("data-role"); }).forEach(function (role) {
           t.expand(role);
           t.approve(role);
         });
       },
       history: function () {
-        return Array.prototype.map.call(root.querySelectorAll(".history-entry h3"), function (h) { return h.textContent; });
+        return Array.prototype.map.call(root.querySelectorAll(".history-entry h3"), function (h) { return h.textContent; }).reverse();
       },
       destroy: function () { app.destroy(); root.remove(); }
     };
-    made.push(t);
-    t.flush();
+    if (!stayOnIncident) t.round();
     return t;
   }
 
@@ -45,6 +49,56 @@ describe("App", function () {
     t.expandAndApproveAll();
     t.click("Send to outbox");
   }
+
+  it("inbox lists incoming incidents; the live one is new until opened", function () {
+    var t = mount(true);
+    var items = t.root.querySelectorAll(".inbox-item");
+    expect(items).toHaveLength(3);
+    expect(t.root.querySelector(".inbox-item.selected").textContent).toContain("Primary radar failure");
+    expect(t.root.querySelector(".inbox-item.selected .badge").textContent).toBe("New");
+    t.root.querySelector(".inbox-item.selected").click();
+    expect(t.root.querySelector(".inbox-item.selected .badge").textContent).toContain("Action needed");
+    t.destroy();
+  });
+
+  it("other inbox entries are placeholders without the stakeholder flow", function () {
+    var t = mount(true);
+    t.root.querySelectorAll(".inbox-item")[1].click();
+    expect(t.root.querySelector("[data-action=inform]")).toBe(null);
+    expect(t.root.querySelector(".body").textContent).toContain("No stakeholder action required");
+    t.destroy();
+  });
+
+  it("Inform stakeholders opens a recipients step with the suggested people", function () {
+    var t = mount(true);
+    expect(t.btn("Inform stakeholders")).toBeTruthy();
+    t.act("inform");
+    var body = t.root.querySelector(".body").textContent;
+    expect(body).toContain("Who will be informed");
+    expect(body).toContain("Anna Müller");
+    expect(body).toContain("Not notified for non-major incidents");
+    expect(body).toContain("5 people will be contacted");
+    expect(t.root.querySelector("input[data-id=\"c8\"]").disabled).toBe(true);
+    t.destroy();
+  });
+
+  it("recipients can be removed and added before generating", function () {
+    var t = mount(true);
+    t.act("inform");
+    t.root.querySelector("input[data-id=\"c3\"]").click();
+    expect(t.root.querySelector(".body").textContent).toContain("4 people will be contacted");
+    expect(t.root.querySelector(".body").textContent).toContain("removed by you");
+    t.root.querySelector("input[data-id=\"c7\"]").click();
+    expect(t.root.querySelector(".body").textContent).toContain("5 people will be contacted");
+    expect(t.root.querySelector(".body").textContent).toContain("added by you");
+    t.act("generate");
+    t.flush();
+    var v = t.app.derive();
+    expect(v.recipients.map(function (c) { return c.id; })).not.toContain("c3");
+    expect(v.recipients.map(function (c) { return c.id; })).toContain("c7");
+    expect(v.keys.map(function (k) { return k.key; })).toContain("MANAGEMENT:EN");
+    t.destroy();
+  });
 
   it("Approve is disabled until the card has been expanded", function () {
     var t = mount();
@@ -65,22 +119,20 @@ describe("App", function () {
   });
 
   it("shows the generating status before drafts are ready", function () {
-    var queue = [], root = document.createElement("div");
-    document.getElementById("test-root").appendChild(root);
-    var app = SkyNet.createApp(root, { clock: { setTimeout: function (fn) { queue.push(fn); } } });
-    expect(root.querySelector(".gen-status").textContent).toContain("Writing drafts");
-    queue.shift()();
-    expect(root.querySelector(".gen-status").textContent).toContain("Checking");
-    queue.shift()();
-    expect(root.querySelector(".gen-status")).toBe(null);
-    app.destroy();
+    var t = mount(true);
+    t.act("inform");
+    t.act("generate");
+    expect(t.root.querySelector(".gen-status").textContent).toContain("Writing drafts");
+    t.flush();
+    expect(t.root.querySelector(".gen-status")).toBe(null);
+    t.destroy();
   });
 
   it("Send is blocked while a check fails; override needs a reason of 10+ characters", function () {
     var t = mount();
     sendV1(t);
     t.click("Simulate record update");
-    t.flush();
+    t.round();
     expect(t.root.querySelector(".strip-text").textContent).toContain("7 ready");
     expect(t.root.querySelector(".strip-text").textContent).toContain("1 needs you");
     t.expandAndApproveAll();
@@ -95,8 +147,7 @@ describe("App", function () {
     t.root.querySelector("[data-reason]").value = "Verified manually with ENG lead";
     t.click("Confirm override");
     expect(t.root.querySelector("[role=dialog]")).toBe(null);
-    // overriding resets that role's approval
-    t.approve("ENGINEERING");
+    t.approve("ENGINEERING"); // overriding resets that role's approval
     expect(t.btn("Send to outbox").disabled).toBe(false);
     t.click("Send to outbox");
     var overrides = t.app.state.history[1].overrides;
@@ -105,17 +156,24 @@ describe("App", function () {
     t.destroy();
   });
 
-  it("full demo path: v1 send, update, fix FR issue, send, v3, send", function () {
-    var t = mount();
+  it("full demo path: inform, send, update, fix FR issue, send, v3, send", function () {
+    var t = mount(true);
+    t.round();
     sendV1(t);
     expect(t.history()).toEqual(["Initial"]);
+    expect(t.root.querySelector("[data-testid=sent-banner]").textContent).toContain("Initial");
     t.click("Simulate record update");
-    t.flush();
+    expect(t.root.querySelector(".inbox-item.selected .badge").textContent).toBe("Updated");
     var banner = t.root.querySelector("[data-testid=diff-banner]").textContent;
     expect(banner).toContain("14:00 → 16:00");
     expect(banner).toContain("Datalink: OPERATIONAL → UNAVAILABLE");
     expect(banner).toContain("Major incident: no → yes");
-    expect(t.root.querySelector(".recipients").textContent).toContain("7 recipients");
+    expect(t.btn("Send update to stakeholders")).toBeTruthy();
+    t.act("inform");
+    expect(t.root.querySelector(".body").textContent).toContain("Notified because this is a major incident");
+    expect(t.root.querySelector(".body").textContent).toContain("7 people will be contacted");
+    t.act("generate");
+    t.flush();
     expect(t.root.querySelector(".recipients").textContent).toContain("Management added");
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "N" }));
     expect(t.root.textContent).toContain("Données de surveillance : HORS SERVICE\" is not a record term");
@@ -125,7 +183,8 @@ describe("App", function () {
     t.click("Send to outbox");
     expect(t.history()).toEqual(["Initial", "Update 1"]);
     t.click("Simulate record update");
-    t.flush();
+    expect(t.btn("Send resolution notice")).toBeTruthy();
+    t.round();
     expect(t.root.querySelector("[data-nu]")).toBe(null);
     t.expandAndApproveAll();
     t.click("Send to outbox");
@@ -149,11 +208,21 @@ describe("App", function () {
     t.destroy();
   });
 
+  it("an untouched draft set regenerates automatically on update", function () {
+    var t = mount();
+    t.click("Simulate record update");
+    expect(t.root.querySelector("[data-testid=outdated-banner]")).toBe(null);
+    expect(t.root.querySelector(".gen-status")).toBeTruthy();
+    t.flush();
+    expect(t.app.derive().keys).toHaveLength(8);
+    t.destroy();
+  });
+
   it("Regenerate also resets overrides", function () {
     var t = mount();
     sendV1(t);
     t.click("Simulate record update");
-    t.flush();
+    t.round();
     t.click("Next issue");
     t.click("Override…");
     t.root.querySelector("[data-reason]").value = "Accepting for the demo";
@@ -180,8 +249,7 @@ describe("App", function () {
   it("each message is rendered in the recipient's language", function () {
     var t = mount();
     sendV1(t);
-    var msgs = t.app.state.history[0].messages;
-    var claire = msgs.filter(function (m) { return m.recipient === "Claire Dubois"; })[0];
+    var claire = t.app.state.history[0].messages.filter(function (m) { return m.recipient === "Claire Dubois"; })[0];
     expect(claire.text).toContain("Message initial");
     expect(claire.text).toContain("Radar primaire : HORS SERVICE");
     expect(claire.text).toContain("Rétablissement prévu : 14:00");
@@ -189,10 +257,16 @@ describe("App", function () {
   });
 
   it("a removed recipient stays removed after the update", function () {
-    var t = mount();
-    t.click("5 recipients");
+    var t = mount(true);
+    t.act("inform");
     t.root.querySelector("input[data-id=\"c3\"]").click();
-    expect(t.app.derive().recipients).toHaveLength(4);
+    t.act("generate");
+    t.flush();
+    sendV1(t);
+    t.click("Simulate record update");
+    t.act("inform");
+    expect(t.root.querySelector(".body").textContent).toContain("6 people will be contacted");
+    expect(t.root.querySelector("input[data-id=\"c3\"]").checked).toBe(false);
     t.destroy();
   });
 });
