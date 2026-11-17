@@ -31,6 +31,12 @@
   <script src="tests/checks.test.js"></script>
   <script src="tests/diff.test.js"></script>
   <script src="tests/app.test.js"></script>
-  <script>runTests(document.getElementById("out"));</script>
+  <script>
+    window.addEventListener("error", function (e) {
+      document.getElementById("out").innerHTML = "<h1 class=\"fail\">Script error</h1><pre>" + String(e.message) + " @ " + String(e.filename) + ":" + e.lineno + "</pre>";
+    });
+    try { runTests(document.getElementById("out")); }
+    catch (e) { document.getElementById("out").innerHTML = "<h1 class=\"fail\">Runner error</h1><pre>" + e.stack + "</pre>"; }
+  </script>
 </body>
 </html>
