@@ -72,7 +72,7 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
       return "<button class=\"seg" + (st.opLang === l ? " on" : "") + "\" data-action=\"set-lang\" data-lang=\"" + l + "\" aria-pressed=\"" + (st.opLang === l) + "\">" + l + "</button>";
     }).join("");
     return "<div class=\"brand\">" + ic("radar", "brand-mark") + "<div><strong>SkyNet</strong><span>SMC console</span></div></div>" +
-      "<div class=\"nav\">" + nav("incidents", "inbox", "Incidents", actionNeeded) + nav("stakeholders", "users", "Stakeholders", st.contacts.filter(function (c) { return c.active; }).length) + "</div>" +
+      "<div class=\"nav\">" + nav("incidents", "inbox", "Incidents", actionNeeded) + nav("stakeholders", "users", "Stakeholders", st.contacts.filter(function (c) { return c.active; }).length) + "</div>" + views.demo(st) +
       "<div class=\"rail-foot\"><div class=\"lang-ctl\"><span class=\"lang-label\">" + ic("globe") + "Operator language</span><div class=\"segmented\" role=\"group\" aria-label=\"Operator language\">" + langs + "</div></div>" +
       "<div class=\"operator\"><span class=\"avatar sm\">SO</span><span>SMC operator</span></div></div>";
   };
@@ -81,10 +81,10 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
   function inboxItem(st, e) {
     var selected = st.selected === e.id ? " selected" : "";
     if (!e.live) {
-      return "<li><button class=\"inbox-item" + selected + "\" data-action=\"select\" data-id=\"" + e.id + "\">" +
-        "<span class=\"ii-top\">" + sevPill(false) + "<span class=\"ii-time\">" + e.time + "</span></span>" +
+      return "<li><button class=\"inbox-item" + selected + "\" data-action=\"select\" data-id=\"" + e.id + "\">" + sevPill(false) +
+        "<span class=\"ii-main\"><span class=\"ii-top\"><span class=\"ii-id\">" + e.id + "</span><span class=\"ii-time\">" + e.time + "</span></span>" +
         "<span class=\"ii-title\">" + esc(e.title) + "</span>" +
-        "<span class=\"ii-bottom\"><span class=\"ii-id\">" + e.id + "</span><span class=\"badge badge-muted\">" + esc(e.state) + "</span></span></button></li>";
+        "<span class=\"ii-bottom\"><span class=\"badge badge-muted\">" + esc(e.state) + "</span></span></span></button></li>";
     }
     var r = st.record, sentThis = st.sentVersion === r.version, badge, conf = "";
     if (st.unread) badge = "<span class=\"badge badge-new\">" + (st.history.length ? "Updated" : "New") + "</span>";
@@ -93,10 +93,10 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
       var le = lastEntry(st);
       conf = "<span class=\"conf\">" + confirmedCount(le) + "/" + le.messages.length + " confirmed</span>";
     } else badge = "<span class=\"badge badge-warn\">Action needed</span>";
-    return "<li><button class=\"inbox-item" + selected + (st.unread ? " unread" : "") + "\" data-action=\"select\" data-id=\"" + e.id + "\">" +
-      "<span class=\"ii-top\">" + sevPill(r.major) + (r.resolved ? "<span class=\"sev-pill sev-done\">Resolved</span>" : "") + "<span class=\"ii-time\">" + esc(r.updatedAt.slice(11)) + "</span></span>" +
+    return "<li><button class=\"inbox-item" + selected + (st.unread ? " unread" : "") + "\" data-action=\"select\" data-id=\"" + e.id + "\">" + sevPill(r.major) +
+      "<span class=\"ii-main\"><span class=\"ii-top\"><span class=\"ii-id\">" + r.id + "</span><span class=\"ii-time\">" + esc(r.updatedAt.slice(11)) + "</span></span>" +
       "<span class=\"ii-title\">" + esc(r.title) + "</span>" +
-      "<span class=\"ii-bottom\"><span class=\"ii-id\">" + r.id + "</span>" + conf + badge + "</span></button></li>";
+      "<span class=\"ii-bottom\">" + badge + (r.resolved ? "<span class=\"badge badge-muted\">Resolved</span>" : "") + conf + "</span></span></button></li>";
   }
 
   views.inbox = function (st) {
@@ -142,7 +142,7 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
     var i = st.history.length - 1, done = confirmedCount(e), total = e.messages.length;
     var pct = total ? Math.round(done * 100 / total) : 0;
     return "<section class=\"section delivery\"><div class=\"sec-head\"><h2>Delivery</h2><span class=\"muted\">" + esc(e.label) + " · sent <span class=\"num\">" + esc(e.time) + "</span></span></div>" +
-      "<div class=\"d-summary\"><div class=\"progress\" role=\"progressbar\" aria-valuenow=\"" + pct + "\" aria-valuemin=\"0\" aria-valuemax=\"100\"><span style=\"width:" + pct + "%\"></span></div>" +
+      "<div class=\"d-summary\"><span class=\"pips\" aria-hidden=\"true\">" + e.messages.map(function (m) { return "<i class=\"pip pip-" + m.status + "\"></i>"; }).join("") + "</span>" +
       "<strong class=\"d-count\">" + done + " of " + total + " confirmed</strong></div>" +
       "<table class=\"table\"><thead><tr><th>Recipient</th><th>Role</th><th>Language</th><th>Status</th><th></th></tr></thead><tbody>" +
       e.messages.map(function (m, j) {
@@ -330,7 +330,9 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
     }
     html += recipientSummary(st, v);
     if (st.phase !== "ready") {
-      return html + "<p class=\"gen-status\" role=\"status\"><span class=\"spinner\"></span>" + (st.phase === "writing" ? "Writing drafts…" : "Checking…") + "</p>";
+      var sk = "<div class=\"skeleton-card\" aria-hidden=\"true\"><span class=\"sk sk-title\"></span><span class=\"sk sk-line\"></span><span class=\"sk sk-line short\"></span></div>";
+      return html + "<p class=\"gen-status\" role=\"status\"><span class=\"spinner\"></span>" + (st.phase === "writing" ? "Writing drafts…" : "Checking…") + "</p>" +
+        "<div class=\"skeletons\">" + sk + sk + sk + "</div>";
     }
     html += "<div class=\"strip\"><span class=\"strip-text\"><span class=\"ok\">" + ic("check-circle") + v.ready + " ready</span><span class=\"" + (v.needs.length ? "bad" : "muted") + "\">" + ic("x-circle") +
       v.needs.length + " needs you</span></span>" +
@@ -389,7 +391,7 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
   views.demo = function (st) {
     var last = st.versionIdx >= D.records.length - 1, le = lastEntry(st);
     var pending = le && confirmedCount(le) < le.messages.length;
-    return "<div class=\"demo-box\"><strong>Demo</strong><span class=\"muted small\">INC00123 record v" + st.record.version + " of " + D.records.length + "</span>" +
+    return "<div class=\"demo-box\"><div class=\"demo-head\"><strong>Demo controls</strong><span>INC00123 · record v" + st.record.version + "/" + D.records.length + "</span></div>" +
       "<button class=\"btn sm\" data-action=\"simulate\"" + (last ? " disabled" : "") + ">Simulate record update</button>" +
       "<button class=\"btn sm\" data-action=\"simulate-confirm\"" + (pending ? "" : " disabled") + ">Simulate confirmations</button></div>";
   };

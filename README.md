@@ -39,3 +39,7 @@ tests/      runner.js + *.test.js
 ```
 
 The spec's React/Vite/Vitest stack was replaced by plain browser JavaScript so the project runs without installing anything; behaviour, data, checks and tests follow the spec.
+
+## Fonts
+
+The UI uses Atkinson Hyperlegible Next (SIL Open Font License, see `assets/fonts/OFL.txt`), self-hosted so the app works offline. Design decisions are in `DESIGN.md`.

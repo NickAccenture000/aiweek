@@ -83,7 +83,7 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
       "<div class=\"app\"><nav id=\"r-rail\" class=\"rail\"></nav><aside id=\"r-inbox\" class=\"inbox\"></aside>" +
       "<main class=\"main\"><header id=\"r-head\" class=\"inc-head\"></header><div id=\"r-body\" class=\"body\"></div>" +
       "<div id=\"r-footer\" class=\"footer-bar\"><span id=\"r-nu\"></span><span id=\"r-primary\"></span></div></main>" +
-      "<div id=\"r-demo\"></div><div id=\"r-dialog\"></div></div>";
+      "<div id=\"r-dialog\"></div></div>";
 
     var helpers = { renderDraft: renderDraft };
     function liveSelected() { return st.selected === "INC00123"; }
@@ -108,7 +108,6 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
       renderBody(v);
       $("#r-nu").innerHTML = V.nextUpdate(st);
       $("#r-footer").hidden = !(incidents && liveSelected() && st.step === "messages");
-      $("#r-demo").innerHTML = V.demo(st);
       $("#r-dialog").innerHTML = V.dialog(st, v);
     }
 
