@@ -12,35 +12,47 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
 
     var st = {
       versionIdx: 0, record: D.records[0],
-      selected: "INC00123", unread: true, step: "incident",
+      view: "incidents", selected: "INC00123", unread: true, step: "incident",
+      opLang: "EN",
+      contacts: D.contacts.map(function (c) { return { id: c.id, name: c.name, role: c.role, lang: c.lang, active: c.active }; }),
+      editingContact: null, shForm: null, shError: "",
       history: [], lastSent: null, sentVersion: null,
       overrides: { added: [], removed: [] },
       drafts: {}, approved: {}, expandedOnce: {}, expandedRoles: {}, expandedLang: {},
       editing: null, dialog: null, historyOpen: {}, recipientsOpen: false,
-      phase: "ready", outdated: false, gen: 0, nextUpdate: ""
+      phase: "ready", outdated: false, gen: 0, nextUpdate: "", destroyed: false
     };
 
     // ---------- derived view ----------
+    // Review version = operator language, falling back to EN when the content pack has no draft in it.
+    function reviewLangFor(role) {
+      var has = D.drafts.some(function (d) { return d.recordVersion === st.record.version && d.role === role && d.lang === st.opLang; });
+      return has ? st.opLang : "EN";
+    }
     function renderDraft(draft, lang) {
       var label = L.labelText(L.getLabel(st.history.length, st.record), lang, G);
       return L.render(draft.template, lang, st.record, G, { label: label, nextUpdate: st.nextUpdate });
     }
+    function currentKeys() {
+      var recipients = L.getRecipients(st.record, st.contacts, D.roleRules, st.overrides);
+      return { recipients: recipients, keys: L.getDraftKeys(recipients, reviewLangFor) };
+    }
 
     function derive() {
-      var record = st.record;
-      var recipients = L.getRecipients(record, D.contacts, D.roleRules, st.overrides);
-      var keys = L.getDraftKeys(recipients);
+      var record = st.record, rk = currentKeys(), recipients = rk.recipients, keys = rk.keys;
+      var reviewKey = {};
+      keys.forEach(function (k) { if (k.review) reviewKey[k.role] = k.key; });
       var items = {};
       keys.forEach(function (k) {
         var d = st.drafts[k.key], checks;
         if (!d || d.template == null) {
           checks = [{ id: "draft_exists", pass: false, message: "No draft available for " + L.roleName(k.role) + " in " + k.lang }];
         } else {
-          var en = st.drafts[k.role + ":EN"];
-          checks = L.runChecks(d, en && en.template != null ? en : d, record, G, k.role);
+          var rev = st.drafts[reviewKey[k.role]];
+          checks = L.runChecks(d, rev && rev.template != null ? rev : d, record, G, k.role);
         }
         var failing = checks.filter(function (c) { return !c.pass; });
-        items[k.key] = { role: k.role, lang: k.lang, key: k.key, reviewOnly: k.reviewOnly, draft: d, checks: checks,
+        items[k.key] = { role: k.role, lang: k.lang, key: k.key, review: k.review, reviewOnly: k.reviewOnly, draft: d, checks: checks,
           failing: failing, overridden: !!(d && d.override), needs: failing.length > 0 && !(d && d.override) };
       });
       var roles = L.ROLE_ORDER.filter(function (r) { return keys.some(function (k) { return k.role === r; }); }).map(function (role) {
@@ -68,7 +80,7 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
     // ---------- rendering ----------
     var $ = function (sel) { return root.querySelector(sel); };
     root.innerHTML =
-      "<div class=\"app\"><aside id=\"r-inbox\" class=\"inbox\"></aside>" +
+      "<div class=\"app\"><nav id=\"r-rail\" class=\"rail\"></nav><aside id=\"r-inbox\" class=\"inbox\"></aside>" +
       "<main class=\"main\"><header id=\"r-head\" class=\"inc-head\"></header><div id=\"r-body\" class=\"body\"></div>" +
       "<div id=\"r-footer\" class=\"footer-bar\"><span id=\"r-nu\"></span><span id=\"r-primary\"></span></div></main>" +
       "<div id=\"r-demo\"></div><div id=\"r-dialog\"></div></div>";
@@ -76,9 +88,8 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
     var helpers = { renderDraft: renderDraft };
     function liveSelected() { return st.selected === "INC00123"; }
     function bodyHtml(v) {
-      if (!liveSelected()) {
-        return V.placeholder(D.inbox.filter(function (e) { return e.id === st.selected; })[0]);
-      }
+      if (st.view === "stakeholders") return V.stakeholders(st);
+      if (!liveSelected()) return V.placeholder(D.inbox.filter(function (e) { return e.id === st.selected; })[0]);
       if (st.step === "recipients") return V.recipientsStep(st, v);
       if (st.step === "messages") return V.messages(st, v, helpers);
       return V.incidentStep(st, v);
@@ -88,12 +99,15 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
       $("#r-primary").innerHTML = V.primary(st, v);
     }
     function render() {
-      var v = derive();
-      $("#r-inbox").innerHTML = V.inbox(st);
-      $("#r-head").innerHTML = liveSelected() ? V.head(st, v) : "";
+      if (st.destroyed) return;
+      var v = derive(), incidents = st.view === "incidents";
+      $(".app").classList.toggle("no-list", !incidents);
+      $("#r-rail").innerHTML = V.rail(st);
+      $("#r-inbox").innerHTML = incidents ? V.inbox(st) : "";
+      $("#r-head").innerHTML = incidents && liveSelected() ? V.head(st, v) : "";
       renderBody(v);
       $("#r-nu").innerHTML = V.nextUpdate(st);
-      $("#r-footer").hidden = !(liveSelected() && st.step === "messages");
+      $("#r-footer").hidden = !(incidents && liveSelected() && st.step === "messages");
       $("#r-demo").innerHTML = V.demo(st);
       $("#r-dialog").innerHTML = V.dialog(st, v);
     }
@@ -105,7 +119,7 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
     }
     function ensureDrafts() {
       if (st.outdated) return;
-      L.getDraftKeys(L.getRecipients(st.record, D.contacts, D.roleRules, st.overrides)).forEach(function (k) {
+      currentKeys().keys.forEach(function (k) {
         if (!st.drafts[k.key]) st.drafts[k.key] = makeDraft(k.role, k.lang);
       });
     }
@@ -137,6 +151,7 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
       }, 1000);
     }
     function unapprove(role) { st.approved[role] = false; }
+    function refreshDrafts() { if (st.step === "messages") ensureDrafts(); }
 
     function focusKey(sel) {
       var el = $(sel);
@@ -146,8 +161,9 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
       var v = derive();
       if (!v.needs.length) return;
       var it = v.needs[0];
+      st.view = "incidents"; st.selected = "INC00123"; st.step = "messages";
       st.expandedRoles[it.role] = true; st.expandedOnce[it.role] = true;
-      if (it.lang !== "EN") st.expandedLang[it.key] = true;
+      if (!it.review) st.expandedLang[it.key] = true;
       render();
       focusKey(".draft[data-key=\"" + it.key + "\"]");
     }
@@ -175,27 +191,55 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
     function send() {
       var v = derive();
       if (!v.canSend) return;
-      var overrides = [], messages = [];
+      var overrides = [], messages = [], sentAt = fmtTime(now());
       v.keys.forEach(function (k) {
         var it = v.items[k.key];
         if (it.overridden) overrides.push({ role: k.role, lang: k.lang, reason: it.draft.override.reason, checks: it.draft.override.checks });
         v.recipients.filter(function (c) { return c.role === k.role && c.lang === k.lang; }).forEach(function (c) {
-          messages.push({ recipient: c.name, role: c.role, lang: c.lang, text: renderDraft(it.draft, k.lang).text });
+          messages.push({ recipient: c.name, role: c.role, lang: c.lang, text: renderDraft(it.draft, k.lang).text,
+            status: "sent", sentAt: sentAt, deliveredAt: null, confirmedAt: null });
         });
       });
-      st.history.push({ label: L.labelText(v.label, "EN", G), time: fmtTime(now()), version: st.record.version,
-        approver: "SMC operator", overrides: overrides, messages: messages });
+      var entry = { label: L.labelText(v.label, "EN", G), time: sentAt, version: st.record.version,
+        approver: "SMC operator", overrides: overrides, messages: messages };
+      st.history.push(entry);
       st.lastSent = st.record;
       st.sentVersion = st.record.version;
       st.step = "incident";
       resetInteraction();
+      // Simulated channel receipt: every message reports "Delivered" shortly after sending.
+      clock.setTimeout(function () {
+        if (st.destroyed) return;
+        entry.messages.forEach(function (m) { if (m.status === "sent") { m.status = "delivered"; m.deliveredAt = fmtTime(now()); } });
+        render();
+      }, 1000);
       render();
+    }
+
+    function confirm(m) {
+      var t = fmtTime(now());
+      if (m.status === "sent") { m.status = "delivered"; m.deliveredAt = t; }
+      m.status = "confirmed"; m.confirmedAt = t;
+    }
+
+    function readContactForm() {
+      return {
+        name: ($("[data-sh-name]").value || "").trim(), role: $("[data-sh-role]").value,
+        lang: $("[data-sh-lang]").value, active: $("[data-sh-active]").checked
+      };
+    }
+    function nextContactId() {
+      var max = 0;
+      st.contacts.forEach(function (c) { var n = parseInt(c.id.slice(1), 10); if (n > max) max = n; });
+      return "c" + (max + 1);
     }
 
     // ---------- events ----------
     var actions = {
-      select: function (el) { st.selected = el.dataset.id; if (st.selected === "INC00123") st.unread = false; },
-      inform: function () { st.step = "recipients"; },
+      nav: function (el) { st.view = el.dataset.view; st.editingContact = null; st.shForm = null; st.shError = ""; },
+      "set-lang": function (el) { st.opLang = el.dataset.lang; refreshDrafts(); },
+      select: function (el) { st.view = "incidents"; st.selected = el.dataset.id; if (st.selected === "INC00123") st.unread = false; },
+      inform: function () { st.unread = false; st.step = "recipients"; },
       "back-incident": function () { st.step = "incident"; },
       generate: function () { st.step = "messages"; regenerate(); },
       "toggle-card": function (el) {
@@ -240,7 +284,41 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
           else if (o.removed.indexOf(id) < 0) o.removed = o.removed.concat(id);
         } else if (o.removed.indexOf(id) >= 0) o.removed = o.removed.filter(function (x) { return x !== id; });
         else o.added = o.added.concat(id);
-        if (st.step === "messages") ensureDrafts();
+        refreshDrafts();
+      },
+      "sh-add": function () { st.editingContact = "new"; st.shForm = null; st.shError = ""; },
+      "sh-edit": function (el) { st.editingContact = el.dataset.id; st.shForm = null; st.shError = ""; },
+      "sh-cancel": function () { st.editingContact = null; st.shForm = null; st.shError = ""; },
+      "sh-save": function () {
+        var f = readContactForm();
+        if (!f.name) { st.shForm = f; st.shError = "Name is required."; return; }
+        if (st.editingContact === "new") st.contacts.push({ id: nextContactId(), name: f.name, role: f.role, lang: f.lang, active: f.active });
+        else {
+          var c = st.contacts.filter(function (x) { return x.id === st.editingContact; })[0];
+          if (c) { c.name = f.name; c.role = f.role; c.lang = f.lang; c.active = f.active; }
+        }
+        st.editingContact = null; st.shForm = null; st.shError = "";
+        refreshDrafts();
+      },
+      "sh-toggle-active": function (el) {
+        var c = st.contacts.filter(function (x) { return x.id === el.dataset.id; })[0];
+        if (c) c.active = !c.active;
+        refreshDrafts();
+      },
+      "sh-remove": function (el) {
+        var id = el.dataset.id;
+        st.contacts = st.contacts.filter(function (c) { return c.id !== id; });
+        st.overrides.added = st.overrides.added.filter(function (x) { return x !== id; });
+        st.overrides.removed = st.overrides.removed.filter(function (x) { return x !== id; });
+        refreshDrafts();
+      },
+      "confirm-msg": function (el) {
+        var e = st.history[el.dataset.h], m = e && e.messages[el.dataset.m];
+        if (m) confirm(m);
+      },
+      "simulate-confirm": function () {
+        var e = st.history[st.history.length - 1];
+        if (e) e.messages.forEach(function (m) { if (m.status !== "confirmed") confirm(m); });
       },
       "toggle-history": function (el) { st.historyOpen[el.dataset.idx] = !st.historyOpen[el.dataset.idx]; },
       "next-issue": nextIssue,
@@ -269,7 +347,7 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
       if (e.ctrlKey || e.metaKey || e.altKey || (e.key !== "n" && e.key !== "N")) return;
       var t = e.target, tag = t && t.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (t && t.isContentEditable)) return;
-      if (st.step === "messages" && liveSelected()) nextIssue();
+      if (st.step === "messages" && st.view === "incidents" && liveSelected()) nextIssue();
     }
     root.addEventListener("click", onClick);
     root.addEventListener("input", onInput);
@@ -283,6 +361,7 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
       derive: derive,
       regenerate: regenerate,
       destroy: function () {
+        st.destroyed = true;
         root.removeEventListener("click", onClick);
         root.removeEventListener("input", onInput);
         root.removeEventListener("change", onInput);

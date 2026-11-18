@@ -25,6 +25,14 @@ describe("recipients", function () {
     expect(ids(rec(v2, o))).not.toContain("c3");
     expect(rec(v2, o)).toHaveLength(6);
   });
+  it("the review language can be changed per operator", function () {
+    var keys = L.getDraftKeys(rec(v1), "DE");
+    expect(keys).toHaveLength(5);
+    expect(keys.filter(function (k) { return k.reviewOnly; })).toHaveLength(0);
+    expect(keys.filter(function (k) { return k.review; }).map(function (k) { return k.key; })).toEqual(["ATCO_SUPERVISOR:DE", "ENGINEERING:DE"]);
+    var fr = L.getDraftKeys(rec(v1), function () { return "FR"; });
+    expect(fr.filter(function (k) { return k.review; }).map(function (k) { return k.lang; })).toEqual(["FR", "FR"]);
+  });
   it("a manually added contact is included", function () {
     expect(ids(rec(v1, { added: ["c7"], removed: [] }))).toContain("c7");
   });

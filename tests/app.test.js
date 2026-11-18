@@ -256,6 +256,89 @@ describe("App", function () {
     t.destroy();
   });
 
+  it("inbox shows the severity level, which follows the record", function () {
+    var t = mount(true);
+    var pill = function () { return t.root.querySelector(".inbox-item.selected .sev-pill").textContent; };
+    expect(pill()).toBe("Minor");
+    t.click("Simulate record update");
+    expect(pill()).toBe("Major");
+    var others = t.root.querySelectorAll(".inbox-item .sev-pill");
+    expect(others.length >= 3).toBe(true);
+    t.destroy();
+  });
+
+  it("sent messages report delivery and can be confirmed", function () {
+    var t = mount();
+    sendV1(t);
+    var delivery = function () { return t.root.querySelector(".delivery").textContent; };
+    expect(delivery()).toContain("0 of 5 confirmed");
+    expect(delivery()).toContain("Sent");
+    t.flush(); // simulated channel receipt
+    expect(t.root.querySelector(".delivery .dl-delivered")).toBeTruthy();
+    expect(t.app.state.history[0].messages.every(function (m) { return m.status === "delivered"; })).toBe(true);
+    t.click("Mark confirmed");
+    expect(delivery()).toContain("1 of 5 confirmed");
+    expect(t.root.querySelector(".inbox-item.selected").textContent).toContain("1/5 confirmed");
+    t.click("Simulate confirmations");
+    expect(delivery()).toContain("5 of 5 confirmed");
+    expect(t.root.querySelector("[data-action=\"confirm-msg\"]")).toBe(null);
+    t.destroy();
+  });
+
+  it("stakeholders can be added, edited, deactivated and removed", function () {
+    var t = mount(true);
+    t.click("Stakeholders");
+    expect(t.root.querySelector(".body").textContent).toContain("Contact list");
+    t.act("sh-add");
+    t.click("Save");
+    expect(t.root.querySelector("[role=alert]").textContent).toContain("Name is required");
+    t.root.querySelector("[data-sh-name]").value = "Lena Weber";
+    t.root.querySelector("[data-sh-role]").value = "ENGINEERING";
+    t.root.querySelector("[data-sh-lang]").value = "EN";
+    t.click("Save");
+    expect(t.app.state.contacts).toHaveLength(9);
+    expect(t.root.querySelector(".body").textContent).toContain("Lena Weber");
+    // the new engineer is now a recipient and makes ENG EN a real recipient language
+    var v = t.app.derive();
+    expect(v.recipients).toHaveLength(6);
+    expect(v.keys.filter(function (k) { return k.key === "ENGINEERING:EN"; })[0].reviewOnly).toBe(false);
+    // edit
+    t.root.querySelector("[data-action=\"sh-edit\"][data-id=\"c9\"]").click();
+    t.root.querySelector("[data-sh-name]").value = "Lena Weber-Frei";
+    t.click("Save");
+    expect(t.app.state.contacts[8].name).toBe("Lena Weber-Frei");
+    // deactivate and remove
+    t.root.querySelector("[data-action=\"sh-toggle-active\"][data-id=\"c9\"]").click();
+    expect(t.app.derive().recipients).toHaveLength(5);
+    t.root.querySelector("[data-action=\"sh-remove\"][data-id=\"c9\"]").click();
+    expect(t.app.state.contacts).toHaveLength(8);
+    t.destroy();
+  });
+
+  it("the operator language switches the review version", function () {
+    var t = mount(true);
+    t.root.querySelector("[data-action=\"set-lang\"][data-lang=\"DE\"]").click();
+    t.round();
+    var v = t.app.derive();
+    expect(v.keys).toHaveLength(5); // ENG no longer needs an EN review-only draft
+    expect(v.keys.filter(function (k) { return k.review; }).every(function (k) { return k.lang === "DE"; })).toBe(true);
+    expect(v.needs).toHaveLength(0);
+    t.expand("ENGINEERING");
+    expect(t.card("ENGINEERING").textContent).toContain("DE · review");
+    expect(t.root.querySelector("[data-action=\"set-lang\"][data-lang=\"DE\"]").getAttribute("aria-pressed")).toBe("true");
+    t.destroy();
+  });
+
+  it("operator language falls back to EN when a role has no draft in it", function () {
+    var t = mount(true);
+    t.click("Simulate record update");
+    t.root.querySelector("[data-action=\"set-lang\"][data-lang=\"FR\"]").click();
+    t.round();
+    var mgmt = t.app.derive().keys.filter(function (k) { return k.role === "MANAGEMENT"; });
+    expect(mgmt.filter(function (k) { return k.review; })[0].lang).toBe("EN");
+    t.destroy();
+  });
+
   it("a removed recipient stays removed after the update", function () {
     var t = mount(true);
     t.act("inform");

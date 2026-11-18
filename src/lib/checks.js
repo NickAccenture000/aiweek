@@ -112,11 +112,12 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
     var enIds = L.extractTokens(enDraft.template).map(function (t) { return t.id; });
     var a = sorted(ids), b = sorted(enIds);
     var same = a.join("|") === b.join("|");
-    var parityMsg = "Same facts as the EN version";
+    var reviewName = (enDraft.lang || "EN") + " review version";
+    var parityMsg = "Same facts as the " + reviewName;
     if (!same) {
       var miss = b.filter(function (x) { return a.indexOf(x) < 0; });
       var extra = a.filter(function (x) { return b.indexOf(x) < 0; });
-      parityMsg = "Facts differ from the EN version" + (miss.length ? " (missing: " + miss.join(", ") + ")" : "") + (extra.length ? " (extra: " + extra.join(", ") + ")" : "");
+      parityMsg = "Facts differ from the " + reviewName + (miss.length ? " (missing: " + miss.join(", ") + ")" : "") + (extra.length ? " (extra: " + extra.join(", ") + ")" : "");
       if (!miss.length && !extra.length) parityMsg += " (token counts differ)";
     }
     results.push({ id: "language_parity", pass: same, message: parityMsg });

@@ -9,7 +9,7 @@ During an incident the SMC operator has to tell ATCO supervisors, engineering an
 No Node, npm or build step. Plain HTML, CSS and JavaScript.
 
 - **App:** double-click `index.html`. Use the "Demo" box (bottom right) → *Simulate record update* to go v1 → v2 → v3.
-- **Tests:** double-click `tests.html`. The tab title and the heading show `PASS 36/36` when everything is green.
+- **Tests:** double-click `tests.html`. The tab title and the heading show `PASS 42/42` when everything is green.
 - Optional: `powershell -ExecutionPolicy Bypass -File serve.ps1` serves the folder on http://localhost:5173 (used for the in-app browser preview).
 
 ## Flow
@@ -20,6 +20,13 @@ No Node, npm or build step. Plain HTML, CSS and JavaScript.
 4. **Messages:** drafts are generated (Writing drafts… → Checking…), then each role card is expanded and approved on its own. *Send to outbox* is enabled once every role is approved and every check passes or is overridden with a reason.
 
 Demo: *Inform stakeholders* → *Generate messages* → approve ATCO and Engineering → send ("Initial"). Use the Demo box (bottom right) → *Simulate record update*, then *Send update to stakeholders*; press `N` on the failing Engineering FR draft and click *Use record term*; approve and send ("Update 1"). Simulate once more for v3 and send ("Resolved").
+
+## Also in the console
+
+- **Severity** (Major or Minor, following the record) is shown on every incident in the inbox and in the incident header.
+- **Delivery:** after sending, each recipient shows Sent, Delivered and Confirmed with times and a "x of y confirmed" count (also in the inbox). Delivery receipts are simulated; use *Mark confirmed* per recipient or the Demo box *Simulate confirmations*.
+- **Stakeholders** (left rail): add, edit, deactivate or remove contacts. Changes apply to the recipient suggestions straight away.
+- **Operator language** (left rail, EN/DE/FR): language of the review version of each role. If a role has no draft in that language, EN is used.
 
 ## Layout
 

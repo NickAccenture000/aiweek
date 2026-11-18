@@ -18,16 +18,18 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
     });
   }
 
-  // Per notified role: EN (SMC review version) plus every recipient language.
-  function getDraftKeys(recipients) {
+  // Per notified role: the review version (operator language, EN by default) plus every recipient language.
+  // reviewLang may be a language code or a function(role) -> code.
+  function getDraftKeys(recipients, reviewLang) {
     var keys = [];
     ROLE_ORDER.forEach(function (role) {
       var mine = recipients.filter(function (c) { return c.role === role; });
       if (!mine.length) return;
+      var rl = typeof reviewLang === "function" ? reviewLang(role) : (reviewLang || "EN");
       LANG_ORDER.forEach(function (lang) {
         var hasRecipient = mine.some(function (c) { return c.lang === lang; });
-        if (lang === "EN" || hasRecipient) {
-          keys.push({ role: role, lang: lang, key: role + ":" + lang, reviewOnly: lang === "EN" && !hasRecipient });
+        if (lang === rl || hasRecipient) {
+          keys.push({ role: role, lang: lang, key: role + ":" + lang, review: lang === rl, reviewOnly: lang === rl && !hasRecipient });
         }
       });
     });
