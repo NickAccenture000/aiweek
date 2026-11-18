@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="utf-8" /><title>Issue tracker</title><script src="/vendor/tile.js"></script></head>
+  <body>
+    <p>Admin setup: SQLite is off by default. Enable Manage → Services → Database (SQLite).</p>
+    <p id="write-access" hidden>Read-only: ask an admin to add named SQLite editors. Only if everyone should write, choose Manage → Services → Write access → Any viewer can write.</p>
+    <button id="initialize" hidden>Initialize database</button>
+    <button id="new" hidden>New issue</button>
+    <ul id="issues"></ul>
+    <form id="edit" hidden><input id="title" required /><button>Save</button></form>
+    <p id="status" role="status"></p>
+    <script>
+      (async () => {
+        const list = document.querySelector("#issues");
+        const form = document.querySelector("#edit");
+        const field = document.querySelector("#title");
+        const status = document.querySelector("#status");
+        const initialize = document.querySelector("#initialize");
+        const newIssue = document.querySelector("#new");
+        const writeAccess = document.querySelector("#write-access");
+        let selected = null;
+        let role;
+        let busy = false;
+
+        async function canWrite() {
+          if (window.__PAGES_EDIT__) return false;
+          role = await tile.role();
+          writeAccess.hidden = role.canWriteSqlite;
+          if (!role.canWriteSqlite) status.textContent = "Write access is unavailable. Your draft remains in the form.";
+          return role.canWriteSqlite && !window.__PAGES_EDIT__;
+        }
+
+        function showError(error) {
+          const code = error instanceof tile.TileSvcError ? error.status : 0;
+          if (code === 404) {
+            initialize.hidden = true;
+            newIssue.hidden = true;
+          }
+          status.textContent = code === 404
+            ? "Admin: confirm this tile is published and enable Manage → Services → Database (SQLite), then reload."
+            : code === 413
+              ? "Database limit reached. Your draft remains in the form."
+              : "SQLite operation failed. Your draft remains in the form; check write access before trying again.";
+        }
+
+        async function hasSchema() {
+          const { rows } = await tile.sqlite.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?", ["issue"]
+          );
+          return rows.length > 0;
+        }
+
+        async function load() {
+          const exists = await hasSchema();
+          const editable = role.canWriteSqlite && !window.__PAGES_EDIT__;
+          initialize.hidden = exists || !editable;
+          newIssue.hidden = !exists || !editable;
+          if (!exists) {
+            list.replaceChildren();
+            status.textContent = "An authorized writer must initialize the database before issues can be added.";
+            return;
+          }
+          const { rows } = await tile.sqlite.execute(
+            "SELECT id, title, row_version FROM issue ORDER BY id"
+          );
+          list.replaceChildren(...rows.map((row) => {
+            const item = document.createElement("li");
+            const edit = document.createElement("button");
+            edit.textContent = row.title;
+            edit.disabled = !editable;
+            edit.addEventListener("click", () => {
+              if (busy || !role.canWriteSqlite || window.__PAGES_EDIT__) return;
+              selected = { id: row.id, row_version: row.row_version };
+              field.value = row.title;
+              form.hidden = false;
+            });
+            item.append(edit);
+            return item;
+          }));
+        }
+
+        initialize.addEventListener("click", async () => {
+          if (busy || window.__PAGES_EDIT__) return;
+          busy = true;
+          try {
+            if (!await canWrite()) return;
+            if (!await hasSchema()) {
+              if (!await canWrite()) return;
+              await tile.sqlite.execute(
+                "CREATE TABLE IF NOT EXISTS issue (id INTEGER PRIMARY KEY, title TEXT NOT NULL, row_version INTEGER NOT NULL DEFAULT 0)"
+              );
+            }
+            status.textContent = "Database ready";
+            await load();
+          } catch (error) {
+            showError(error);
+          } finally {
+            busy = false;
+          }
+        });
+
+        newIssue.addEventListener("click", () => {
+          if (busy || !role?.canWriteSqlite || window.__PAGES_EDIT__) return;
+          selected = { id: null, row_version: 0 };
+          field.value = "";
+          form.hidden = false;
+          field.focus();
+        });
+
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          if (busy || !selected || window.__PAGES_EDIT__) return;
+          busy = true;
+          try {
+            if (!await canWrite()) return;
+            if (selected.id === null) {
+              await tile.sqlite.execute("INSERT INTO issue (title) VALUES (?)", [field.value]);
+              status.textContent = "Created";
+              form.hidden = true;
+            } else {
+              const result = await tile.sqlite.applyIf(
+                "UPDATE issue SET title = ?, row_version = row_version + 1 WHERE id = ? AND row_version = ?",
+                [field.value, selected.id, selected.row_version]
+              );
+              if (result.applied) {
+                status.textContent = "Saved";
+                form.hidden = true;
+              } else {
+                status.textContent = "Someone else changed this issue. The list shows their version; select it again to edit.";
+              }
+            }
+            await load();
+          } catch (error) {
+            showError(error);
+          } finally {
+            busy = false;
+          }
+        });
+
+        try {
+          role = await tile.role();
+          writeAccess.hidden = role.canWriteSqlite;
+          await load();
+          if (!window.__PAGES_EDIT__) {
+            const stopWatching = tile.sqlite.watch(() => {
+              load().catch(() => { status.textContent = "Could not refresh the issue list."; });
+            });
+            window.addEventListener("pagehide", stopWatching, { once: true });
+          }
+        } catch (error) {
+          showError(error);
+        }
+      })();
+    </script>
+  </body>
+</html>

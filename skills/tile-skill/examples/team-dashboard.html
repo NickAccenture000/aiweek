@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Team edition analytics</title>
+    <script src="/vendor/tile.js"></script>
+  </head>
+  <body>
+    <main>
+      <h1>Team edition analytics</h1>
+      <p>Each edition is measured over its own first 30 days. Data uses your sign-in.</p>
+      <form id="filters">
+        <label for="team-id">Team ID from your team's address in Tile</label>
+        <input id="team-id" name="team" required />
+        <button id="load" type="submit">Load analytics</button>
+      </form>
+      <p id="status" role="status" aria-live="polite">Enter a team ID to load analytics.</p>
+      <div id="results" hidden>
+        <p id="summary"></p>
+        <table>
+          <caption>Each tile's first 30 days, including incomplete windows</caption>
+          <thead><tr>
+            <th scope="col">Tile</th><th scope="col">Reporting group</th>
+            <th scope="col">Tile created</th><th scope="col">Opens</th>
+            <th scope="col">Average active time</th><th scope="col">Window</th>
+          </tr></thead>
+          <tbody id="editions"></tbody>
+        </table>
+      </div>
+    </main>
+    <script>
+      const form = document.getElementById("filters");
+      const button = document.getElementById("load");
+      const status = document.getElementById("status");
+      const results = document.getElementById("results");
+      const rows = document.getElementById("editions");
+      const dateFormat = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeZone: "UTC" });
+
+      function groupLabel(group) {
+        if (!group) return "Not reported on";
+        return group.parent ? group.parent.label + " / " + group.label : group.label;
+      }
+
+      function render(data) {
+        if (!Array.isArray(data.editions)) {
+          throw new Error("The response lacks edition data. Check edition_days support in this deployment.");
+        }
+        if (!Number.isInteger(data.totals?.opens) || data.totals.opens < 0) {
+          throw new Error("Invalid team totals in analytics response.");
+        }
+        rows.replaceChildren();
+        for (const edition of data.editions) {
+          const seconds = edition?.engagement?.average_active_seconds;
+          if (!edition || typeof edition.slug !== "string" || !edition.slug ||
+              typeof edition.url !== "string" || !edition.url.trim() ||
+              typeof edition.published_at !== "string" || !Number.isFinite(Date.parse(edition.published_at)) ||
+              typeof edition.window_complete !== "boolean" ||
+              !Number.isInteger(edition.totals?.opens) || edition.totals.opens < 0 ||
+              (seconds != null && (!Number.isFinite(seconds) || seconds < 0))) {
+            throw new Error("Invalid edition data in analytics response.");
+          }
+          const tr = document.createElement("tr");
+          const title = document.createElement("td");
+          const link = document.createElement("a");
+          const url = new URL(edition.url, location.origin);
+          if (!['http:', 'https:'].includes(url.protocol)) throw new Error("Invalid tile URL in analytics response.");
+          link.href = url.href;
+          link.textContent = edition.title || edition.slug;
+          title.append(link);
+          tr.append(title);
+          const values = [
+            groupLabel(edition.report_group),
+            dateFormat.format(new Date(edition.published_at)),
+            edition.totals.opens.toLocaleString(),
+            seconds == null ? "Not measured" : Math.round(seconds) + " s",
+            edition.window_complete ? "Complete" : "In progress",
+          ];
+          for (const value of values) {
+            const td = document.createElement("td");
+            td.textContent = value;
+            tr.append(td);
+          }
+          rows.append(tr);
+        }
+        document.getElementById("summary").textContent =
+          "Team opens in the default calendar range (last 30 days): " + data.totals.opens.toLocaleString() +
+          ". Edition rows use their own windows, not that calendar range.";
+        results.hidden = false;
+        status.textContent = data.editions.length ? "Analytics loaded." : "No tiles are linked to this team.";
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (button.disabled) return;
+        const team = document.getElementById("team-id").value.trim();
+        if (!team) { status.textContent = "Enter a team ID."; return; }
+        button.disabled = true;
+        results.hidden = true;
+        status.textContent = "Loading team analytics…";
+        try {
+          const query = new URLSearchParams({ edition_days: "30" });
+          const response = await fetch("/api/teams/" + encodeURIComponent(team) + "/analytics?" + query, {
+            headers: { Accept: "application/json" },
+            signal: AbortSignal.timeout(15000),
+          });
+          const isJson = (response.headers.get("content-type") || "").includes("application/json");
+          const data = isJson ? await response.json() : null;
+          if (!response.ok) {
+            const error = new Error(typeof data?.error === "string" ? data.error : "HTTP " + response.status);
+            error.status = response.status;
+            throw error;
+          }
+          if (!isJson) throw new Error("Expected analytics JSON. Sign in to Tile and try again.");
+          render(data);
+        } catch (error) {
+          results.hidden = true;
+          status.textContent = error.status === 404
+            ? "Team analytics unavailable. Check the team ID and your membership; teams may also be unavailable in this deployment."
+            : error.status === 401
+              ? "Sign in to Tile and try again."
+              : error.status === 400
+                ? "The analytics request was rejected: " + error.message
+                : "Could not load analytics: " + error.message + " Try Load analytics again when ready.";
+        } finally {
+          button.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>

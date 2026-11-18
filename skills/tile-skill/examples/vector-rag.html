@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Document search</title>
+    <script src="/vendor/tile.js"></script>
+  </head>
+  <body>
+    <section id="admin" hidden>
+      <input id="file" type="file" accept=".pdf,.pptx,.docx,.xlsx,.html,.htm,.md,.csv,.txt" />
+      <button id="ingest">Index document</button>
+      <ul id="documents"></ul>
+    </section>
+    <form id="search">
+      <label for="question">Ask the documents</label>
+      <input id="question" required />
+      <button>Ask</button>
+    </form>
+    <p id="answer"></p>
+    <ul id="sources"></ul>
+    <p id="status" role="status"></p>
+    <script>
+      (async () => {
+        const status = document.querySelector("#status");
+        const messageFor = (error) => {
+          if (!(error instanceof tile.TileSvcError)) return "The service is unavailable.";
+          if (error.status === 403) return "Only a tile admin can do that.";
+          if (error.status === 413) return "The document is too large.";
+          if (error.status === 415) return "That file type is not supported.";
+          if (error.status === 422) return "No extractable text was found. Tile does not run OCR.";
+          if (error.status === 429) return "The AI budget or document quota is exhausted: " + error.error;
+          if (error.status === 503) return "Vector search is temporarily unavailable.";
+          return error.error || "The request failed.";
+        };
+        const citation = (source) => {
+          const meta = source.metadata || {};
+          if (meta.filename) return meta.unit ? meta.filename + ", " + meta.unit : meta.filename;
+          return source.id;
+        };
+
+        try {
+          const availability = await tile.ai.available();
+          if (!availability.ok) {
+            status.textContent = "AI and vector search are not enabled for this tile.";
+            return;
+          }
+
+          const role = await tile.role();
+          document.querySelector("#admin").hidden = !role.isPageAdmin;
+
+          async function loadDocuments() {
+            if (!role.isPageAdmin) return;
+            const { documents } = await tile.vector.list();
+            document.querySelector("#documents").replaceChildren(
+              ...documents.map((entry) => {
+                const item = document.createElement("li");
+                item.textContent = entry.filename || entry.docId;
+                return item;
+              })
+            );
+          }
+
+          const ingestButton = document.querySelector("#ingest");
+          ingestButton.addEventListener("click", async () => {
+            if (window.__PAGES_EDIT__) return;
+            const file = document.querySelector("#file").files[0];
+            if (!file) return;
+            ingestButton.disabled = true;
+            status.textContent = "Indexing…";
+            try {
+              const result = await tile.vector.ingest(file, { filename: file.name });
+              status.textContent = "Indexed " + result.units + " " + result.format + " unit(s).";
+              await loadDocuments();
+            } catch (error) {
+              status.textContent = messageFor(error);
+            } finally {
+              ingestButton.disabled = false;
+            }
+          });
+
+          document.querySelector("#search").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            status.textContent = "Searching…";
+            try {
+              const response = await tile.vector.query({
+                query: document.querySelector("#question").value,
+                answer: true
+              });
+              document.querySelector("#answer").textContent = response.answer || "No grounded answer found.";
+              document.querySelector("#sources").replaceChildren(
+                ...(response.sources || []).map((source) => {
+                  const item = document.createElement("li");
+                  item.textContent = citation(source);
+                  item.title = source.id;
+                  return item;
+                })
+              );
+              status.textContent = "";
+            } catch (error) {
+              status.textContent = messageFor(error);
+            }
+          });
+
+          try {
+            await loadDocuments();
+          } catch (error) {
+            status.textContent = messageFor(error);
+          }
+        } catch (error) {
+          status.textContent = "Roles or vector search could not be loaded.";
+        }
+      })();
+    </script>
+  </body>
+</html>

@@ -1,26 +1,1353 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SkyNet – Stakeholder Message Generator</title>
-  <link rel="stylesheet" href="styles.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SMC Stakeholder Messages</title>
+<style>
+:root {
+  --bg: #f5f5f7;
+  --card: #ffffff;
+  --well: #f5f5f7;
+  --ink: #1d1d1f;
+  --ink-2: #6e6e73;
+  --ink-3: #86868b;
+  --line: #e5e5ea;
+  --line-2: #d2d2d7;
+  --blue: #0071e3;
+  --blue-ink: #0066cc;
+  --green: #1f8a3b;
+  --green-dot: #34c759;
+  --amber: #a85200;
+  --amber-dot: #ff9500;
+  --amber-bg: #fff6e8;
+  --red: #d70015;
+  --red-dot: #ff3b30;
+  --hl: #fff2bf;
+  /* one colour per message subsection, shared by record and message */
+  --s-affected: #ff3b30;
+  --s-works: #34c759;
+  --s-degraded: #ff9500;
+  --s-expect: #0071e3;
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+  --radius: 18px;
+  --shadow: 0 1px 2px rgba(0,0,0,.04), 0 6px 24px rgba(0,0,0,.05);
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.47 var(--sans); letter-spacing: -.01em; -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; color: inherit; letter-spacing: inherit; }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 6px; }
+h1, h2, h3, p { margin: 0; }
+ul { margin: 0; padding: 0; list-style: none; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+
+/* ---------- nav ---------- */
+.nav { position: sticky; top: 0; z-index: 20; background: rgba(245,245,247,.82); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid rgba(0,0,0,.06); }
+.nav .wrap { display: flex; align-items: center; gap: 16px; min-height: 52px; flex-wrap: wrap; padding-top: 6px; padding-bottom: 6px; }
+.nav .name { font: 600 15px var(--display); margin-right: auto; }
+.nav select { border: 0; background: transparent; font-size: 13px; color: var(--ink-2); cursor: pointer; max-width: 60vw; }
+.svc { font-size: 12px; color: var(--ink-2); display: inline-flex; align-items: center; gap: 6px; }
+.svc::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); }
+.svc[data-state="ready"]::before { background: var(--green-dot); }
+.svc[data-state="demo"]::before, .svc[data-state="off"]::before { background: var(--amber-dot); }
+.toggle { display: inline-flex; gap: 8px; align-items: center; font-size: 12px; color: var(--ink-2); cursor: pointer; }
+.toggle input { appearance: none; width: 30px; height: 18px; border-radius: 9px; background: var(--line-2); position: relative; cursor: pointer; transition: background .2s; margin: 0; }
+.toggle input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.2); transition: transform .2s; }
+.toggle input:checked { background: var(--green-dot); }
+.toggle input:checked::after { transform: translateX(12px); }
+
+/* ---------- hero ---------- */
+.hero { padding: 44px 0 28px; }
+.hero .kicker { font-size: 13px; color: var(--ink-2); font-family: var(--mono); letter-spacing: 0; }
+.hero h1 { font: 600 clamp(28px, 4vw, 40px)/1.1 var(--display); letter-spacing: -.025em; margin-top: 8px; max-width: 24ch; }
+.hero .facts { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-top: 14px; font-size: 14px; color: var(--ink-2); }
+.sev { font: 600 12px/1 var(--sans); letter-spacing: .02em; padding: 6px 10px; border-radius: 980px; }
+.sev.major { background: #ffe5e7; color: var(--red); }
+.sev.minor { background: #ececf0; color: var(--ink-2); }
+.setup, .modeline { margin-top: 14px; font-size: 13px; color: var(--ink-2); max-width: 80ch; }
+.banner { margin-top: 18px; display: inline-flex; gap: 8px; align-items: center; padding: 9px 14px; border-radius: 12px; background: var(--amber-bg); color: var(--amber); font-size: 14px; animation: rise .35s ease; }
+.banner.info { background: #e8f2fd; color: var(--blue-ink); }
+.banner:empty { display: none; }
+
+/* ---------- layout ---------- */
+.layout { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 24px; align-items: start; padding-bottom: 32px; }
+.card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); }
+@media (max-width: 960px) { .layout { grid-template-columns: minmax(0, 1fr); } .wrap { padding: 0 16px; } }
+
+/* ---------- record ---------- */
+.record { position: sticky; top: 72px; padding: 22px 22px 18px; max-height: calc(100vh - 88px); overflow: auto; }
+@media (max-width: 960px) { .record { position: static; max-height: none; } }
+.record-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.record-head h2 { font: 600 17px var(--display); }
+.lock { font-size: 12px; color: var(--ink-3); }
+.rev { font-size: 13px; color: var(--ink-2); margin-top: 2px; }
+.rsec { margin-top: 18px; }
+.rsec h3, .msec h3 { display: flex; align-items: center; gap: 8px; font: 600 13px var(--sans); }
+.rsec h3::before, .msec h3::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--dot); flex: none; }
+.affected { --dot: var(--s-affected); } .works { --dot: var(--s-works); } .degraded { --dot: var(--s-degraded); } .expect { --dot: var(--s-expect); }
+.ritem { padding: 7px 0 7px 16px; border-bottom: 1px solid var(--line); transition: background-color .4s; border-radius: 6px; }
+.ritem:last-child { border-bottom: 0; }
+.ritem p { font-size: 14px; line-height: 1.4; }
+.ritem .meta { font-size: 11px; color: var(--ink-3); margin-top: 2px; font-family: var(--mono); letter-spacing: 0; }
+.ritem.hl { background: var(--hl); }
+.ritem.changed p::after { content: "Updated"; margin-left: 6px; font: 600 10px var(--sans); color: var(--amber); background: var(--amber-bg); padding: 2px 6px; border-radius: 980px; vertical-align: 1px; }
+.next { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
+.next p { font-size: 13px; color: var(--ink-2); margin-bottom: 10px; }
+.next b { color: var(--ink); font-weight: 600; }
+
+/* ---------- buttons ---------- */
+.btn { border: 0; border-radius: 980px; padding: 8px 16px; font-size: 14px; font-weight: 500; cursor: pointer; background: #e8e8ed; color: var(--ink); transition: background-color .2s, opacity .2s, transform .1s; }
+.btn:hover:not(:disabled) { background: #dcdce1; }
+.btn:active:not(:disabled) { transform: scale(.98); }
+.btn:disabled { cursor: not-allowed; opacity: .45; }
+.btn.blue { background: var(--blue); color: #fff; }
+.btn.blue:hover:not(:disabled) { background: #0077ed; }
+.btn.dark { background: var(--ink); color: #fff; }
+.btn.dark:hover:not(:disabled) { background: #333336; }
+.btn.ghost { background: transparent; color: var(--blue-ink); padding: 8px 10px; }
+.btn.ghost:hover:not(:disabled) { background: #eef5fe; }
+.approve { position: relative; overflow: hidden; --p: 0; min-width: 116px; }
+.approve::before { content: ""; position: absolute; inset: 0; background: rgba(0,113,227,.22); transform-origin: left; transform: scaleX(var(--p)); transition: transform .25s linear; }
+.approve:not(:disabled)::before { display: none; }
+.approve:disabled { opacity: 1; background: #e3eefb; color: var(--blue-ink); }
+.approve span { position: relative; }
+
+/* ---------- audience card ---------- */
+.groups { display: grid; gap: 24px; }
+.group { padding: 24px; }
+.ghead { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+.ghead h2 { font: 600 22px/1.2 var(--display); letter-spacing: -.02em; }
+.ghead .sub { font-size: 13px; color: var(--ink-2); margin-top: 2px; }
+.sendbox { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+.sendbox .why { font-size: 13px; color: var(--ink-2); }
+.sendbox .why.done { color: var(--green); }
+
+.metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin-top: 18px; border-radius: 14px; background: var(--well); padding: 12px 4px; }
+.metric { padding: 2px 14px; border-left: 1px solid var(--line-2); min-width: 0; }
+.metric:first-child { border-left: 0; }
+.metric .k { font-size: 11px; color: var(--ink-2); line-height: 1.3; }
+.metric .v { font: 600 21px/1.25 var(--display); letter-spacing: -.02em; margin-top: 2px; }
+.metric .v.warn { color: var(--amber); }
+.metric .v.muted { color: var(--ink-3); font-size: 15px; font-weight: 500; }
+.metric .m { font-size: 11px; color: var(--ink-3); }
+@media (max-width: 720px) {
+  .metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 12px; }
+  .metric:nth-child(4) { border-left: 0; }
+}
+
+.seg { display: inline-flex; margin-top: 22px; background: #e8e8ed; border-radius: 10px; padding: 3px; gap: 2px; }
+.seg button { border: 0; background: transparent; border-radius: 8px; padding: 6px 16px; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; transition: background-color .2s, box-shadow .2s; }
+.seg button[aria-selected="true"] { background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--line-2); flex: none; }
+.dot.ok { background: var(--green-dot); } .dot.attn { background: var(--amber-dot); } .dot.bad { background: var(--red-dot); }
+.dot.busy { background: var(--ink-3); animation: pulse 1s ease-in-out infinite; }
+
+.to { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 16px; font-size: 13px; color: var(--ink-2); }
+.to > span:first-child { margin-right: 4px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; border-radius: 980px; border: 1px solid var(--line-2); background: #fff; cursor: pointer; font-size: 13px; color: var(--ink); transition: opacity .2s; }
+.chip input { margin: 0; accent-color: var(--blue); }
+.chip:has(input:not(:checked)) { opacity: .5; text-decoration: line-through; }
+
+/* the message, as the stakeholder receives it */
+.msg { margin-top: 12px; background: var(--well); border-radius: 16px; padding: 20px 22px; animation: rise .28s ease; }
+.msg.approved { box-shadow: inset 0 0 0 2px var(--green-dot); }
+.msg .from { font-size: 12px; color: var(--ink-3); font-family: var(--mono); letter-spacing: 0; }
+.msg .title { font: 600 17px/1.3 var(--display); margin-top: 3px; }
+.msec { margin-top: 14px; }
+.msec li { position: relative; padding-left: 16px; margin-top: 4px; font-size: 15px; line-height: 1.45; }
+.msec li::before { content: ""; position: absolute; left: 3px; top: .62em; width: 4px; height: 4px; border-radius: 50%; background: var(--ink-3); }
+.msec li.missing { color: var(--amber); font-style: italic; }
+.msec li.flagged { background: linear-gradient(transparent 62%, rgba(255,149,0,.25) 62%); }
+.msec textarea { width: 100%; margin-top: 6px; min-height: 48px; border: 1px solid var(--line-2); border-radius: 10px; padding: 8px 10px; background: #fff; font-size: 14px; resize: vertical; }
+.src { font: 500 10px var(--mono); color: var(--ink-3); background: #fff; border: 1px solid var(--line-2); border-radius: 5px; padding: 1px 4px; margin-left: 4px; cursor: pointer; vertical-align: 2px; letter-spacing: 0; }
+.src:hover, .src:focus-visible { background: var(--hl); color: var(--ink); }
+.msg .placeholder { color: var(--ink-2); font-size: 14px; display: flex; gap: 8px; align-items: center; }
+.msg .placeholder::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); animation: pulse 1s ease-in-out infinite; }
+
+.flags { margin-top: 14px; display: grid; gap: 6px; }
+.flag { display: flex; gap: 10px; align-items: flex-start; padding: 9px 12px; border-radius: 10px; background: var(--amber-bg); color: var(--amber); font-size: 13px; line-height: 1.4; cursor: pointer; }
+.flag input { margin: 2px 0 0; accent-color: var(--amber-dot); flex: none; }
+.flag.blocking { background: #ffeef0; color: var(--red); cursor: default; font-weight: 500; }
+.decide { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; }
+.decide .why { font-size: 13px; color: var(--ink-2); margin-left: 6px; }
+.decide .ok { color: var(--green); font-weight: 600; font-size: 14px; }
+.decide .bad { color: var(--red); font-weight: 600; font-size: 14px; }
+.note { font-size: 12px; color: var(--ink-3); margin-top: 10px; }
+
+.not-informed { padding: 20px 24px; color: var(--ink-2); font-size: 14px; }
+.not-informed h2 { font: 600 17px var(--display); color: var(--ink); margin-bottom: 2px; }
+
+details.more { margin-top: 16px; font-size: 13px; }
+details.more summary { cursor: pointer; color: var(--blue-ink); list-style: none; }
+details.more summary::-webkit-details-marker { display: none; }
+details.more summary::after { content: " ›"; }
+details.more[open] summary::after { content: " ⌄"; }
+
+/* similarity heatmap */
+.heatmaps { display: flex; flex-wrap: wrap; gap: 28px; margin-top: 14px; }
+.hm h3 { font: 600 13px var(--sans); margin-bottom: 8px; }
+.hgrid { display: grid; gap: 2px; }
+.hgrid .ax { font: 10px var(--mono); color: var(--ink-3); display: flex; align-items: center; justify-content: center; }
+.hgrid .cell { width: 26px; height: 26px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font: 600 9px var(--mono); }
+.legend { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--ink-3); margin-top: 12px; }
+.legend .ramp { width: 120px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, #cde2fb, #86b6ef, #3987e5, #1c5cab, #0d366b); }
+.tip { position: fixed; z-index: 30; pointer-events: none; background: rgba(29,29,31,.92); color: #fff; font-size: 12px; padding: 8px 10px; border-radius: 10px; max-width: 320px; white-space: pre-line; }
+
+/* ---------- log ---------- */
+.log { margin: 8px 0 48px; }
+.log > summary { cursor: pointer; font-size: 13px; color: var(--ink-2); list-style: none; padding: 12px 0; }
+.log > summary::-webkit-details-marker { display: none; }
+.log > summary::after { content: " ›"; }
+.log[open] > summary::after { content: " ⌄"; }
+.log .card { padding: 20px 22px; overflow-x: auto; }
+.log h3 { font: 600 15px var(--display); margin: 4px 0 8px; }
+.log h3 + p { font-size: 13px; color: var(--ink-2); margin-bottom: 10px; max-width: 80ch; }
+table { border-collapse: collapse; width: 100%; font-size: 12px; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 600; color: var(--ink-2); }
+td.mono { font-family: var(--mono); letter-spacing: 0; }
+.pass { color: var(--green); } .fail { color: var(--red); }
+.logbar { display: flex; gap: 12px; align-items: center; margin: 22px 0 8px; }
+footer { padding: 0 0 40px; font-size: 12px; color: var(--ink-3); }
+
+@keyframes rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes pulse { 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
 </head>
 <body>
-  <div id="app"></div>
-  <script src="src/data/records.js"></script>
-  <script src="src/data/inbox.js"></script>
-  <script src="src/data/contacts.js"></script>
-  <script src="src/data/roleRules.js"></script>
-  <script src="src/data/glossary.js"></script>
-  <script src="src/data/drafts.js"></script>
-  <script src="src/lib/recipients.js"></script>
-  <script src="src/lib/label.js"></script>
-  <script src="src/lib/render.js"></script>
-  <script src="src/lib/diff.js"></script>
-  <script src="src/lib/checks.js"></script>
-  <script src="src/ui/views.js"></script>
-  <script src="src/ui/app.js"></script>
-  <script>window.app = SkyNet.createApp(document.getElementById("app"));</script>
+<nav class="nav" aria-label="Tool">
+  <div class="wrap">
+    <span class="name">SMC Messages</span>
+    <label><span class="visually-hidden" hidden>Incident</span><select id="scenario" aria-label="Incident"></select></label>
+    <label class="toggle"><input type="checkbox" id="sources"> Show sources</label>
+    <span id="svc" class="svc" data-state="checking" role="status" aria-live="polite">Checking AI</span>
+  </div>
+</nav>
+
+<main class="wrap">
+  <section class="hero" id="hero" aria-live="polite"></section>
+  <div class="layout">
+    <aside class="card record" id="record" aria-label="Incident record"></aside>
+    <section class="groups" id="groups" aria-label="Messages"></section>
+  </div>
+  <details class="log" id="log">
+    <summary>Verification and activity log</summary>
+    <div class="card" id="logbody"></div>
+  </details>
+  <footer>Synthetic data for the Graduate Academy SkyNet case. Incidents, systems and people are fictional. Sending is simulated: no SMS or email leaves this page.</footer>
+</main>
+<div class="tip" id="tip" hidden></div>
+
+<script src="/vendor/tile.js" onerror="window.__tileLoadFailed = true"></script>
+<script>
+"use strict";
+
+/* =====================================================================
+   Reference data
+   ===================================================================== */
+const SECTIONS = ["affected", "works", "degraded", "expect"];
+const SEC_LABEL = {
+  en: { affected: "Affected", works: "Still works", degraded: "Degraded", expect: "What to expect" },
+  de: { affected: "Betroffen", works: "Funktioniert weiterhin", degraded: "Eingeschränkt", expect: "Zu erwarten" },
+  fr: { affected: "Affecté", works: "Fonctionne toujours", degraded: "Dégradé", expect: "À prévoir" }
+};
+const SEV_LABEL = {
+  en: { major: "Major incident", minor: "Minor incident" },
+  de: { major: "Schwerwiegender Vorfall", minor: "Geringfügiger Vorfall" },
+  fr: { major: "Incident majeur", minor: "Incident mineur" }
+};
+const UPD_LABEL = { en: "Update", de: "Update", fr: "Mise à jour" };
+const LANGS = ["en", "de", "fr"];
+const LANG_NAME = { en: "English", de: "German", fr: "French" };
+const AUD_ORDER = ["atco", "eng", "mgmt"];
+const AUD = {
+  atco: { label: "ATCO supervisors", short: "ATCO",
+    brief: "Air traffic controller supervisors. They need the operational impact on traffic, sectors and capacity, in plain operational language. Leave out technical root-cause detail." },
+  eng: { label: "Engineering", short: "ENG",
+    brief: "Engineering on-call staff. They need technical detail: components, nodes, gateways, fault isolation, supplier actions and technical timelines." },
+  mgmt: { label: "Management", short: "MGMT",
+    brief: "Management, informed for major incidents only. They need a short business-level summary: what is down, impact on operations and traffic, expected restoration. At most two bullets per section, no technical jargon." }
+};
+
+/* Fictional people. No contact details: sending is simulated. */
+const DIRECTORY = [
+  { id: "p01", aud: "atco", name: "M. Keller",  role: "Supervisor, ACC Zurich",      lang: "de" },
+  { id: "p02", aud: "atco", name: "C. Dubois",  role: "Supervisor, ACC Geneva",      lang: "fr" },
+  { id: "p03", aud: "atco", name: "A. Brunner", role: "Supervisor, Tower Zurich",    lang: "de" },
+  { id: "p04", aud: "atco", name: "L. Favre",   role: "Supervisor, Tower Geneva",    lang: "fr" },
+  { id: "p05", aud: "atco", name: "R. Silva",   role: "Supervisor, flow management", lang: "en" },
+  { id: "p06", aud: "eng",  name: "S. Meier",   role: "FDP on-call engineer",        lang: "de" },
+  { id: "p07", aud: "eng",  name: "J. Rochat",  role: "Network on-call engineer",    lang: "fr" },
+  { id: "p08", aud: "eng",  name: "P. Novak",   role: "Supplier liaison",            lang: "en" },
+  { id: "p09", aud: "mgmt", name: "D. Steiner", role: "Head of operations",          lang: "de" },
+  { id: "p10", aud: "mgmt", name: "N. Girard",  role: "Chief operating officer",     lang: "fr" },
+  { id: "p11", aud: "mgmt", name: "E. Walsh",   role: "Duty manager",                lang: "en" }
+];
+
+/* Record item: id, section, audiences, English text, plus reference DE/FR
+   translations used only in demo mode (no AI). */
+function I(id, section, aud, en, de, fr) {
+  return { id, section, aud: aud.split(" "), text: en, tr: { de, fr }, trFor: en };
+}
+
+const SCENARIOS = [
+  {
+    record: { id: "INC-2026-1118-014", title: "SKYFORGE flight data processing down",
+      system: "SKYFORGE", severity: "major", location: "ACC Zurich", updatedAt: "13:52 UTC" },
+    items: [
+      I("A1", "affected", "atco eng mgmt", "SKYFORGE primary cluster at ACC Zurich down since 13:42 UTC.",
+        "SKYFORGE-Primärcluster im ACC Zürich seit 13:42 UTC ausgefallen.",
+        "Cluster principal SKYFORGE à l'ACC Zurich en panne depuis 13:42 UTC."),
+      I("A2", "affected", "atco eng", "No automatic flight plan updates in sectors ZRH-E and ZRH-W.",
+        "Keine automatischen Flugplan-Updates in den Sektoren ZRH-E und ZRH-W.",
+        "Plus de mises à jour automatiques des plans de vol dans les secteurs ZRH-E et ZRH-W."),
+      I("A3", "affected", "eng", "Fault isolated to the storage controller on node FDP-ZH-02.",
+        "Fehler auf den Storage-Controller von Knoten FDP-ZH-02 eingegrenzt.",
+        "Panne localisée sur le contrôleur de stockage du nœud FDP-ZH-02."),
+      I("W1", "works", "atco eng", "Radar (SENTINELWATCH) and voice (ECHOVOX) fully operational.",
+        "Radar (SENTINELWATCH) und Sprechfunk (ECHOVOX) voll funktionsfähig.",
+        "Radar (SENTINELWATCH) et voix (ECHOVOX) pleinement opérationnels."),
+      I("W2", "works", "atco eng mgmt", "Fallback at ACC Geneva distributes flight plans.",
+        "Fallback im ACC Genf verteilt die Flugpläne.",
+        "Le secours de l'ACC Genève distribue les plans de vol."),
+      I("D1", "degraded", "atco eng", "Flight plan changes delayed by up to 3 minutes.",
+        "Flugplanänderungen bis zu 3 Minuten verzögert.",
+        "Modifications de plans de vol retardées jusqu'à 3 minutes."),
+      I("D2", "degraded", "atco mgmt", "Sector ZRH-E capacity reduced by 20%.",
+        "Kapazität Sektor ZRH-E um 20% reduziert.",
+        "Capacité du secteur ZRH-E réduite de 20%."),
+      I("E1", "expect", "atco eng mgmt", "Restoration expected by 15:30 UTC.",
+        "Wiederherstellung bis 15:30 UTC erwartet.",
+        "Rétablissement prévu d'ici 15:30 UTC."),
+      I("E2", "expect", "atco mgmt", "Arrival delays of 10–15 minutes at Zurich possible.",
+        "Ankunftsverspätungen von 10–15 Minuten in Zürich möglich.",
+        "Retards à l'arrivée de 10–15 minutes possibles à Zurich."),
+      I("E3", "expect", "eng", "Supplier on site at 14:30 UTC.",
+        "Lieferant ab 14:30 UTC vor Ort.",
+        "Fournisseur sur site à 14:30 UTC."),
+      I("E4", "expect", "atco eng mgmt", "Next SMC update at 14:15 UTC.",
+        "Nächstes SMC-Update um 14:15 UTC.",
+        "Prochaine mise à jour SMC à 14:15 UTC.")
+    ],
+    updates: [
+      { updatedAt: "14:08 UTC", label: "Longer delay, later restoration",
+        set: [
+          I("D1", "degraded", "atco eng", "Flight plan changes delayed by up to 5 minutes.",
+            "Flugplanänderungen bis zu 5 Minuten verzögert.",
+            "Modifications de plans de vol retardées jusqu'à 5 minutes."),
+          I("E1", "expect", "atco eng mgmt", "Restoration expected by 16:00 UTC.",
+            "Wiederherstellung bis 16:00 UTC erwartet.",
+            "Rétablissement prévu d'ici 16:00 UTC."),
+          I("E2", "expect", "atco mgmt", "Arrival delays of 15–25 minutes at Zurich possible.",
+            "Ankunftsverspätungen von 15–25 Minuten in Zürich möglich.",
+            "Retards à l'arrivée de 15–25 minutes possibles à Zurich.")
+        ], remove: [] },
+      { updatedAt: "14:31 UTC", label: "Supplier on site (engineering only)",
+        set: [
+          I("E5", "expect", "eng", "Supplier on site since 14:28 UTC; replacing the storage controller.",
+            "Lieferant seit 14:28 UTC vor Ort; Storage-Controller wird ersetzt.",
+            "Fournisseur sur site depuis 14:28 UTC ; remplacement du contrôleur de stockage.")
+        ], remove: ["E3"] }
+    ]
+  },
+  {
+    record: { id: "INC-2026-1118-009", title: "METEOFLOW weather feed delayed",
+      system: "METEOFLOW", severity: "minor", location: "Zurich and Geneva", updatedAt: "09:18 UTC" },
+    items: [
+      I("A1", "affected", "atco eng", "METEOFLOW weather feed delayed since 09:10 UTC.",
+        "METEOFLOW-Wetterfeed seit 09:10 UTC verzögert.",
+        "Flux météo METEOFLOW retardé depuis 09:10 UTC."),
+      I("A2", "affected", "eng", "Gateway METEO-GW-1 times out towards the provider.",
+        "Gateway METEO-GW-1 mit Timeouts zum Anbieter.",
+        "Timeouts de la passerelle METEO-GW-1 vers le fournisseur."),
+      I("W1", "works", "atco eng", "Local airport wind sensors fully operational.",
+        "Lokale Windsensoren der Flughäfen voll funktionsfähig.",
+        "Capteurs de vent locaux des aéroports pleinement opérationnels."),
+      I("D1", "degraded", "atco eng", "En-route wind data refresh every 10 minutes instead of every minute.",
+        "En-Route-Winddaten werden alle 10 Minuten statt jede Minute aktualisiert.",
+        "Données de vent en route actualisées toutes les 10 minutes au lieu de chaque minute."),
+      I("E1", "expect", "atco eng", "Provider expects a fix by 10:30 UTC.",
+        "Anbieter erwartet Behebung bis 10:30 UTC.",
+        "Le fournisseur prévoit une correction d'ici 10:30 UTC."),
+      I("E2", "expect", "atco", "No impact on traffic flow expected.",
+        "Keine Auswirkung auf den Verkehrsfluss erwartet.",
+        "Aucun impact sur le flux de trafic attendu."),
+      I("E3", "expect", "eng", "Switch to backup gateway METEO-GW-2 if unresolved by 10:00 UTC.",
+        "Umschaltung auf Backup-Gateway METEO-GW-2, falls bis 10:00 UTC ungelöst.",
+        "Bascule sur la passerelle de secours METEO-GW-2 si non résolu d'ici 10:00 UTC.")
+    ],
+    updates: [
+      { updatedAt: "10:02 UTC", label: "Switched to backup gateway",
+        set: [
+          I("W2", "works", "atco eng", "Data flowing via backup gateway METEO-GW-2 since 10:01 UTC.",
+            "Daten fliessen seit 10:01 UTC über Backup-Gateway METEO-GW-2.",
+            "Données transmises via la passerelle de secours METEO-GW-2 depuis 10:01 UTC."),
+          I("D1", "degraded", "atco eng", "En-route wind data catching up; normal refresh by 10:15 UTC.",
+            "En-Route-Winddaten werden nachgeführt; normale Aktualisierung bis 10:15 UTC.",
+            "Données de vent en route en rattrapage ; actualisation normale d'ici 10:15 UTC.")
+        ], remove: ["E3"] }
+    ]
+  }
+];
+
+/* =====================================================================
+   State
+   ===================================================================== */
+const S = {
+  scn: 0, rec: null, updIdx: 0,
+  unselected: new Set(),
+  msgs: {},            // "aud:lang" -> message
+  seq: {},             // generation id per audience (drops superseded results)
+  review: {},          // aud -> "running" | "done" | "failed: …"
+  sim: {}, simState: {}, // aud -> similarity result / "running" | error text
+  view: { atco: "en", eng: "en", mgmt: "en" },
+  edits: {},           // "aud:lang" -> sections draft while the SMC edits
+  changedItems: new Set(),
+  showSources: false,
+  log: [],
+  banner: "", bannerKind: "warn",
+  ai: { state: "checking", model: null, residency: null, message: "", calls: 0, tokens: 0, cost: 0, costKnown: false },
+  me: "SMC on shift", meNote: "checking"
+};
+const key = (aud, lang) => aud + ":" + lang;
+let GEN = 0; // global counter, so a result from a previous incident can never match a new one
+const EDIT_MODE = !!window.__PAGES_EDIT__;
+
+/* =====================================================================
+   Utilities
+   ===================================================================== */
+function h(tag, props, ...kids) {
+  const el = document.createElement(tag);
+  if (props) for (const [k, v] of Object.entries(props)) {
+    if (v == null || v === false) continue;
+    if (k === "class") el.className = v;
+    else if (k.startsWith("on") && typeof v === "function") el.addEventListener(k.slice(2), v);
+    else if (k === "style") el.style.cssText = v;
+    else if (typeof v === "boolean") el[k] = v;
+    else el.setAttribute(k, v);
+  }
+  for (const c of kids.flat(9)) {
+    if (c == null || c === false) continue;
+    el.append(c instanceof Node ? c : document.createTextNode(String(c)));
+  }
+  return el;
+}
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const nowUtc = (sec) => new Date().toISOString().slice(11, sec ? 19 : 16) + " UTC";
+const shortHash = (x) => x ? x.slice(0, 12) : "—";
+const $ = (id) => document.getElementById(id);
+
+/* Synchronous SHA-256 over UTF-8 so hashes are available during render. */
+function sha256(text) {
+  const bytes = Array.from(new TextEncoder().encode(text));
+  const P = [];
+  for (let n = 2; P.length < 64; n++) if (P.every((p) => n % p)) P.push(n);
+  const K = P.map((p) => (Math.cbrt(p) % 1) * 4294967296 | 0);
+  let H = P.slice(0, 8).map((p) => (Math.sqrt(p) % 1) * 4294967296 | 0);
+  const bitLen = bytes.length * 8;
+  bytes.push(0x80);
+  while (bytes.length % 64 !== 56) bytes.push(0);
+  const hi = Math.floor(bitLen / 4294967296);
+  for (let i = 3; i >= 0; i--) bytes.push((hi >>> (i * 8)) & 255);
+  for (let i = 3; i >= 0; i--) bytes.push((bitLen >>> (i * 8)) & 255);
+  const rr = (v, n) => (v >>> n) | (v << (32 - n));
+  for (let o = 0; o < bytes.length; o += 64) {
+    const W = new Array(64);
+    for (let i = 0; i < 16; i++) W[i] = (bytes[o + 4 * i] << 24) | (bytes[o + 4 * i + 1] << 16) | (bytes[o + 4 * i + 2] << 8) | bytes[o + 4 * i + 3];
+    for (let i = 16; i < 64; i++) {
+      const s0 = rr(W[i - 15], 7) ^ rr(W[i - 15], 18) ^ (W[i - 15] >>> 3);
+      const s1 = rr(W[i - 2], 17) ^ rr(W[i - 2], 19) ^ (W[i - 2] >>> 10);
+      W[i] = (W[i - 16] + s0 + W[i - 7] + s1) | 0;
+    }
+    let [a, b, c, d, e, f, g, hh] = H;
+    for (let i = 0; i < 64; i++) {
+      const t1 = (hh + (rr(e, 6) ^ rr(e, 11) ^ rr(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + W[i]) | 0;
+      const t2 = ((rr(a, 2) ^ rr(a, 13) ^ rr(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
+      hh = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+    }
+    const v = [a, b, c, d, e, f, g, hh];
+    H = H.map((x, i) => (x + v[i]) | 0);
+  }
+  return H.map((v) => (v >>> 0).toString(16).padStart(8, "0")).join("");
+}
+
+/* Numbers, times and upper-case codes (UTC, ZRH-E, FDP-ZH-02, SKYFORGE).
+   These must survive drafting and translation unchanged. */
+const TOKEN_RE = /\b[A-Z][A-Z0-9]+(?:-[A-Z0-9]+)*\b|\d+(?:[:.,]\d+)*/g;
+const factTokens = (s) => new Set((s || "").match(TOKEN_RE) || []);
+
+function log(actor, event, info = {}) {
+  S.log.push({ time: nowUtc(true), actor, who: actor === "SMC" ? S.me : actor,
+    event, message: info.key || "", revision: S.rec ? S.rec.revision : null, hash: info.hash || "", detail: info.detail || "" });
+}
+
+/* =====================================================================
+   Record and routing (the record is read-only; it changes only through
+   record updates arriving from the source systems)
+   ===================================================================== */
+function loadScenario(i) {
+  const sc = SCENARIOS[i];
+  S.scn = i; S.updIdx = 0;
+  S.rec = { ...sc.record, revision: 1, items: sc.items.map((x) => ({ ...x, aud: [...x.aud], tr: { ...x.tr } })) };
+  Object.assign(S, { msgs: {}, seq: {}, review: {}, sim: {}, simState: {}, edits: {}, changedItems: new Set(), unselected: new Set(), banner: "" });
+  S.view = { atco: "en", eng: "en", mgmt: "en" };
+  log("System", "Incident record loaded", { detail: `${S.rec.id} (${S.rec.severity}), rev 1` });
+}
+const audiencesFor = () => S.rec.severity === "major" ? AUD_ORDER.slice() : ["atco", "eng"];
+const itemsFor = (aud) => SECTIONS.flatMap((s) => S.rec.items.filter((i) => i.section === s && i.aud.includes(aud)));
+const basisOf = (aud) => sha256(JSON.stringify(itemsFor(aud).map((i) => [i.id, i.section, i.text])));
+const itemById = (id) => S.rec.items.find((i) => i.id === id);
+const recipients = (aud, lang) => DIRECTORY.filter((p) => p.aud === aud && p.lang === lang && !S.unselected.has(p.id));
+/* English is the master every translation derives from, so it always needs approval. */
+const neededLangs = (aud) => LANGS.filter((l) => l === "en" || recipients(aud, l).length > 0);
+
+function applyNextUpdate() {
+  const u = SCENARIOS[S.scn].updates[S.updIdx];
+  if (!u || EDIT_MODE) return;
+  const before = Object.fromEntries(audiencesFor().map((a) => [a, basisOf(a)]));
+  S.changedItems = new Set();
+  for (const it of u.set) {
+    const copy = { ...it, aud: [...it.aud], tr: { ...it.tr } };
+    const idx = S.rec.items.findIndex((x) => x.id === it.id);
+    if (idx >= 0) S.rec.items[idx] = copy; else S.rec.items.push(copy);
+    S.changedItems.add(it.id);
+  }
+  S.rec.items = S.rec.items.filter((x) => !u.remove.includes(x.id));
+  S.updIdx += 1;
+  S.rec.revision += 1;
+  S.rec.updatedAt = u.updatedAt;
+  log("System", "Incident record updated", { detail: `rev ${S.rec.revision}: ${u.label}` });
+  const changed = audiencesFor().filter((a) => before[a] !== basisOf(a));
+  const kept = audiencesFor().filter((a) => !changed.includes(a));
+  S.bannerKind = "warn";
+  S.banner = `Record updated to revision ${S.rec.revision}. ` +
+    (changed.length ? `Redrafted for ${changed.map((a) => AUD[a].label).join(", ")}; please review again.` : "No message content changed.") +
+    (kept.length && changed.length ? ` ${kept.map((a) => AUD[a].label).join(", ")} unchanged.` : "");
+  changed.forEach((a) => generateAudience(a));
+  render();
+}
+
+/* =====================================================================
+   Messages
+   ===================================================================== */
+function emptySections() { return Object.fromEntries(SECTIONS.map((s) => [s, []])); }
+function newMsg(aud, lang, prev) {
+  return { aud, lang, rev: S.rec.revision, basis: basisOf(aud), status: "generating", origin: "none", note: "",
+    sections: emptySections(), enHash: null, hash: "", checks: [], ruleScore: null, aiScore: null, aiIssues: [],
+    review: "off", flags: [], acks: {}, readMs: 0, approvedHash: null, approvedAt: null, sent: prev ? prev.sent : null };
+}
+const bullets = (m) => SECTIONS.flatMap((s) => m.sections[s].map((b, i) => ({ s, i, b })));
+const wordCount = (m) => bullets(m).reduce((n, x) => n + x.b.text.split(/\s+/).filter(Boolean).length, 0);
+/* Reading gate: ~90 ms per word, at least 1.5 s, at most 6 s on screen. */
+const needMs = (m) => clamp(wordCount(m) * 90, 1500, 6000);
+
+/* The exact text the stakeholder receives. Hashed for approval and send. */
+function canonical(m) {
+  const lines = [`${S.rec.system} · ${S.rec.id}`, `${SEV_LABEL[m.lang][S.rec.severity]} · ${UPD_LABEL[m.lang]} ${m.rev}`];
+  for (const s of SECTIONS) {
+    if (!m.sections[s].length) continue;
+    lines.push("", SEC_LABEL[m.lang][s]);
+    for (const b of m.sections[s]) lines.push("• " + b.text);
+  }
+  return lines.join("\n");
+}
+
+function checksFor(m) {
+  const items = itemsFor(m.aud);
+  const ids = new Set(items.map((i) => i.id));
+  const all = bullets(m);
+  const out = [];
+  const add = (id, label, ok, detail, blocking) => out.push({ id, label, ok, detail: ok ? "" : detail, blocking: !!blocking });
+  add("fresh", "Built from the current record", m.basis === basisOf(m.aud), "The record changed after this message was drafted.", true);
+  const empty = all.filter((x) => !x.b.text.trim()).length;
+  add("complete", "No empty bullets", all.length > 0 && empty === 0, all.length ? `${empty} bullet(s) are empty.` : "The message has no content.", true);
+  if (m.lang === "en") {
+    const badTrace = all.filter((x) => !x.b.src.length || x.b.src.some((id) => !itemById(id)));
+    add("trace", "Every bullet cites the record", badTrace.length === 0, `${badTrace.length} bullet(s) cite no record item.`);
+    const outScope = all.filter((x) => x.b.src.some((id) => itemById(id) && !ids.has(id)));
+    add("scope", `Only items for ${AUD[m.aud].label}`, outScope.length === 0, `${outScope.length} bullet(s) use items meant for another audience.`);
+    const cited = new Set(all.flatMap((x) => x.b.src));
+    const missing = items.filter((i) => !cited.has(i.id)).map((i) => i.id);
+    add("coverage", "All relevant items covered", missing.length === 0, `Not covered: ${missing.join(", ")}.`);
+    const factBad = all.filter((x) => {
+      const src = factTokens(x.b.src.map((id) => itemById(id)?.text || "").join(" "));
+      return [...factTokens(x.b.text)].some((t) => !src.has(t));
+    });
+    add("facts", "Numbers and codes match the record", factBad.length === 0, `${factBad.length} bullet(s) contain numbers or codes not in the record.`);
+  } else {
+    const en = S.msgs[key(m.aud, "en")];
+    add("basis", "Translated from the current English", !!en && m.enHash === en.hash, "The English message changed after this translation. Translate again or edit.", true);
+    const structOk = !!en && SECTIONS.every((s) => en.sections[s].length === m.sections[s].length);
+    add("structure", "Same structure as English", structOk, "Bullet structure differs from English.");
+    const factBad = en ? SECTIONS.flatMap((s) => en.sections[s].map((b, i) => {
+      const t = factTokens(m.sections[s][i]?.text);
+      return [...factTokens(b.text)].filter((x) => !t.has(x));
+    })).flat() : [];
+    add("facts", "Numbers and codes match English", factBad.length === 0, `Missing or changed: ${[...new Set(factBad)].join(", ")}.`);
+  }
+  return out;
+}
+
+/* Rule-based accuracy = share of per-bullet / per-item checks that pass. */
+function ruleScore(m) {
+  let pass = 0, total = 0;
+  const tick = (ok) => { total++; if (ok) pass++; };
+  if (m.lang === "en") {
+    const items = itemsFor(m.aud), ids = new Set(items.map((i) => i.id));
+    for (const { b } of bullets(m)) {
+      tick(b.src.length && b.src.every((id) => itemById(id)));
+      tick(b.src.every((id) => ids.has(id)));
+      const src = factTokens(b.src.map((id) => itemById(id)?.text || "").join(" "));
+      tick([...factTokens(b.text)].every((t) => src.has(t)) && b.text.trim());
+    }
+    const cited = new Set(bullets(m).flatMap((x) => x.b.src));
+    items.forEach((i) => tick(cited.has(i.id)));
+  } else {
+    const en = S.msgs[key(m.aud, "en")];
+    if (!en) return 0;
+    for (const s of SECTIONS) en.sections[s].forEach((b, i) => {
+      const t = m.sections[s][i];
+      tick(!!t && !!t.text.trim());
+      const tt = factTokens(t?.text);
+      tick([...factTokens(b.text)].every((x) => tt.has(x)));
+    });
+    tick(SECTIONS.every((s) => en.sections[s].length === m.sections[s].length));
+  }
+  return total ? Math.round((pass / total) * 100) : 0;
+}
+
+/* Accuracy shown to the SMC: the stricter of rule checks and AI review. */
+function accuracy(m) {
+  if (!m || m.status === "generating") return { v: null, how: "" };
+  if (m.review === "pending") return { v: null, how: "AI review running" };
+  if (m.aiScore == null) return { v: m.ruleScore, how: "rule checks" };
+  return { v: Math.min(m.ruleScore, m.aiScore), how: "rule checks + AI review" };
+}
+
+function flagsFor(m) {
+  const f = [];
+  const isEn = m.lang === "en";
+  for (const c of m.checks) if (!c.ok) f.push({ id: "chk:" + c.id, text: `${c.label}: ${c.detail}`, blocking: c.blocking });
+  const acc = accuracy(m);
+  if (acc.v != null && acc.v < 100)
+    f.push({ id: "acc", text: `${isEn ? "Retrieval" : "Translation"} accuracy ${acc.v}% (below 100%). Read closely before approving.` });
+  m.aiIssues.forEach((x, i) => f.push({ id: "ai:" + i, text: `${SEC_LABEL[m.lang][x.section] || x.section}, point ${x.index + 1}: ${x.problem}` }));
+  if (m.review === "failed") f.push({ id: "review", text: "The AI review did not finish. Accuracy is based on rule checks only." });
+  if (m.origin === "demo" && !isEn) f.push({ id: "demo", text: "Reference translation (demo mode, no AI). Compare it with the English." });
+  return f;
+}
+
+function refreshMsg(m) {
+  m.hash = sha256(canonical(m));
+  m.checks = checksFor(m);
+  m.ruleScore = ruleScore(m);
+  m.flags = flagsFor(m);
+  const ids = new Set(m.flags.map((x) => x.id));
+  for (const k of Object.keys(m.acks)) if (!ids.has(k)) delete m.acks[k];
+  if (m.lang === "en") for (const l of ["de", "fr"]) {
+    const t = S.msgs[key(m.aud, l)];
+    if (t && t.status !== "generating") refreshMsg(t);
+  }
+}
+
+function gate(m) {
+  if (m.status !== "draft") return { ok: false, why: "" };
+  if (S.edits[key(m.aud, m.lang)]) return { ok: false, why: "Save or cancel your edit first." };
+  if (m.flags.some((f) => f.blocking)) return { ok: false, why: "Fix the issue above first." };
+  if (m.review === "pending") return { ok: false, why: "Waiting for the AI review." };
+  if (m.readMs < needMs(m)) return { ok: false, why: "Read the message to unlock Approve." };
+  const unacked = m.flags.filter((f) => !f.blocking && !m.acks[f.id]).length;
+  if (unacked) return { ok: false, why: `Tick ${unacked === 1 ? "the note" : `all ${unacked} notes`} above to confirm you checked ${unacked === 1 ? "it" : "them"}.` };
+  return { ok: true, why: "" };
+}
+
+/* =====================================================================
+   Drafting: rule-based (always available) and Tile AI
+   ===================================================================== */
+const aiReady = () => S.ai.state === "ready" && !EDIT_MODE;
+
+function ruleDraft(aud) {
+  const s = emptySections();
+  for (const it of itemsFor(aud)) s[it.section].push({ text: it.text, src: [it.id] });
+  return s;
+}
+
+function demoTranslate(en, lang) {
+  let missing = 0;
+  const s = emptySections();
+  for (const sec of SECTIONS) for (const b of en.sections[sec]) {
+    const it = b.src.length === 1 ? itemById(b.src[0]) : null;
+    const ok = it && it.trFor === it.text && b.text === it.text && it.tr[lang];
+    if (!ok) missing++;
+    s[sec].push({ text: ok ? it.tr[lang] : "", src: [...b.src] });
+  }
+  return { sections: s, missing };
+}
+
+function withTimeout(promise, ms) {
+  let t;
+  const timeout = new Promise((_, rej) => { t = setTimeout(() => rej(Object.assign(new Error("timeout"), { timeout: true })), ms); });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(t));
+}
+
+function aiErrorText(e) {
+  if (e && e.timeout) return "no answer within 45 s; the request may still finish in the background";
+  if (window.tile && tile.TileSvcError && e instanceof tile.TileSvcError) {
+    if (e.status === 404) return "AI is not enabled for this tile";
+    if (e.status === 429) return "the daily AI budget is used up";
+    if (e.status === 413) return "the request is too large";
+    if (e.status === 401) return "your session expired; reload the page";
+    if (e.status === 503) return "AI is temporarily unavailable";
+    return `AI error ${e.status}: ${e.error || "request refused"}`;
+  }
+  return (e && e.message) || "unknown error";
+}
+
+function tokensOf(u) {
+  if (!u || typeof u !== "object") return 0;
+  if (typeof u.totalTokens === "number") return u.totalTokens;
+  if (typeof u.total_tokens === "number") return u.total_tokens;
+  const pick = (...ks) => ks.map((k) => u[k]).find((v) => typeof v === "number") || 0;
+  return pick("inputTokens", "input_tokens", "input", "prompt_tokens") + pick("outputTokens", "output_tokens", "output", "completion_tokens");
+}
+function meter(r) {
+  S.ai.calls += 1;
+  S.ai.tokens += tokensOf(r && r.usage);
+  if (r && r.cost && typeof r.cost.total === "number") { S.ai.cost += r.cost.total; S.ai.costKnown = true; }
+  renderSvc();
+}
+
+async function aiObject(prompt, schema) {
+  const args = { prompt, schema };
+  if (S.ai.model) args.model = S.ai.model;
+  const r = await withTimeout(tile.ai.object(args), 45000);
+  meter(r);
+  if (!r || typeof r.object !== "object" || !r.object) throw new Error("the AI returned no structured answer");
+  return r.object;
+}
+
+const arr = (item) => ({ type: "array", items: item });
+const obj = (props) => ({ type: "object", properties: props, required: Object.keys(props), additionalProperties: false });
+
+async function aiDraft(aud) {
+  const items = itemsFor(aud);
+  const schema = obj(Object.fromEntries(SECTIONS.map((s) => [s, arr(obj({ text: { type: "string" }, sources: arr({ type: "string" }) }))])));
+  const prompt = [
+    "You draft one short stakeholder message for an air traffic control incident at a Swiss air navigation service provider.",
+    `Audience: ${AUD[aud].label}. ${AUD[aud].brief}`,
+    "Rules:",
+    "- Use only facts from the record items below. Do not add, infer, soften or speculate.",
+    "- Keep every number, time, sector, node and system name exactly as written.",
+    "- Write short, plain English bullets. Put each bullet in the section of the item it comes from.",
+    "- List the item IDs each bullet is based on in \"sources\".",
+    "- Cover every item below. Leave a section empty if no item belongs to it.",
+    "",
+    `Incident ${S.rec.id}, severity ${S.rec.severity}, record revision ${S.rec.revision}: ${S.rec.title}`,
+    "Items (ID | section | text):",
+    ...items.map((i) => `${i.id} | ${i.section} | ${i.text}`)
+  ].join("\n");
+  const o = await aiObject(prompt, schema);
+  const s = emptySections();
+  for (const sec of SECTIONS) {
+    if (!Array.isArray(o[sec])) throw new Error(`the AI draft has no "${sec}" section`);
+    for (const b of o[sec]) {
+      if (!b || typeof b.text !== "string" || !b.text.trim()) continue;
+      s[sec].push({ text: b.text.trim(), src: Array.isArray(b.sources) ? b.sources.filter((x) => typeof x === "string").map((x) => x.trim()) : [] });
+    }
+  }
+  if (!SECTIONS.some((sec) => s[sec].length)) throw new Error("the AI draft is empty");
+  return s;
+}
+
+async function aiTranslate(en, lang) {
+  const schema = obj(Object.fromEntries(SECTIONS.map((s) => [s, arr({ type: "string" })])));
+  const src = Object.fromEntries(SECTIONS.map((s) => [s, en.sections[s].map((b) => b.text)]));
+  const prompt = [
+    `Translate this air traffic control stakeholder message from English into ${lang === "de" ? "Swiss Standard German (write ss, never ß)" : "French as used in Switzerland"}.`,
+    "Rules:",
+    "- Keep the same sections and exactly the same number of bullets in the same order.",
+    "- Keep all numbers, times, UTC, sector names, node names and upper-case system names exactly as written.",
+    "- Do not add, drop or soften any information. Keep it as short as the English.",
+    "",
+    "Message (JSON):",
+    JSON.stringify(src)
+  ].join("\n");
+  const o = await aiObject(prompt, schema);
+  const s = emptySections();
+  for (const sec of SECTIONS) {
+    const out = Array.isArray(o[sec]) ? o[sec] : [];
+    if (out.length !== en.sections[sec].length) throw new Error(`the ${LANG_NAME[lang]} translation changed the number of points in "${sec}"`);
+    en.sections[sec].forEach((b, i) => s[sec].push({ text: String(out[i] || "").trim(), src: [...b.src] }));
+  }
+  return s;
+}
+
+async function aiReview(aud, langs) {
+  const R = obj({ score: { type: "number" }, issues: arr(obj({ section: { type: "string", enum: SECTIONS }, index: { type: "integer" }, problem: { type: "string" } })) });
+  const schema = obj(Object.fromEntries(langs.map((l) => [l, R])));
+  const show = (l) => JSON.stringify(Object.fromEntries(SECTIONS.map((s) => [s, S.msgs[key(aud, l)].sections[s].map((b) => b.text)])));
+  const prompt = [
+    "You are a strict reviewer of stakeholder messages for an air traffic control incident. Score each message from 0 to 100.",
+    "- \"en\" (information retrieval accuracy): 100 means every statement is supported by the record items and nothing relevant is missing. Lower it for any unsupported, changed or missing fact.",
+    "- \"de\" and \"fr\" (translation accuracy): 100 means the translation says exactly what the English says. Lower it for any change of meaning, omission, addition, or changed number, time or name.",
+    "- List each problem with its section and zero-based bullet index, in one short English sentence. Return an empty list when there is none.",
+    "",
+    `Audience: ${AUD[aud].label}. ${AUD[aud].brief}`,
+    "Record items (ID | section | text):",
+    ...itemsFor(aud).map((i) => `${i.id} | ${i.section} | ${i.text}`),
+    "",
+    ...langs.map((l) => `${l} message: ${show(l)}`)
+  ].join("\n");
+  return aiObject(prompt, schema);
+}
+
+async function generateAudience(aud) {
+  const seq = ++GEN;
+  S.seq[aud] = seq;
+  for (const l of LANGS) {
+    const k = key(aud, l), old = S.msgs[k];
+    if (old && old.status === "approved") log("System", "Approval withdrawn", { key: k, hash: old.approvedHash, detail: `record rev ${S.rec.revision} changed this audience's content` });
+    S.msgs[k] = newMsg(aud, l, old);
+    delete S.edits[k];
+  }
+  delete S.sim[aud]; delete S.simState[aud];
+  S.view[aud] = "en";
+  render();
+
+  const en = S.msgs[key(aud, "en")];
+  let draft = null, origin = "rule", note = "";
+  if (aiReady()) {
+    try { draft = await aiDraft(aud); origin = "ai"; }
+    catch (e) { note = `AI draft failed (${aiErrorText(e)}). Showing the rule-based draft.`; log("System", "AI draft failed", { key: key(aud, "en"), detail: aiErrorText(e) }); }
+  }
+  if (seq !== S.seq[aud]) return;
+  if (!draft) { draft = ruleDraft(aud); origin = "rule"; }
+  Object.assign(en, { sections: draft, origin, note, status: "draft", review: aiReady() ? "pending" : "off" });
+  refreshMsg(en);
+  log(origin === "ai" ? "AI" : "System", "English draft created", { key: key(aud, "en"), hash: en.hash, detail: `${origin === "ai" ? "Tile AI" : "rule-based"}, from record rev ${en.rev}` });
+  render();
+
+  await Promise.all(["de", "fr"].map((l) => translateInto(aud, l, seq)));
+  if (seq !== S.seq[aud]) return;
+  await afterDrafts(aud, seq);
+}
+
+/* AI review, then semantic similarity. Both are skipped without Tile AI. */
+async function afterDrafts(aud, seq) {
+  if (!aiReady() || seq !== S.seq[aud]) return;
+  await reviewAudience(aud, seq);
+  if (seq === S.seq[aud]) await computeSimilarity(aud, seq);
+}
+
+async function translateInto(aud, lang, seq) {
+  const en = S.msgs[key(aud, "en")], m = S.msgs[key(aud, lang)];
+  m.status = "generating"; m.note = "";
+  render();
+  let secs = null, origin = "demo", note = "";
+  if (aiReady()) {
+    try { secs = await aiTranslate(en, lang); origin = "ai"; }
+    catch (e) { note = `AI translation failed (${aiErrorText(e)}).`; log("System", "AI translation failed", { key: key(aud, lang), detail: aiErrorText(e) }); }
+  }
+  if (seq !== S.seq[aud] || S.msgs[key(aud, lang)] !== m) return;
+  if (!secs) {
+    const d = demoTranslate(en, lang);
+    secs = d.sections;
+    if (d.missing) note += ` ${d.missing} point(s) have no reference translation. Choose Edit to write them.`;
+  }
+  Object.assign(m, { sections: secs, origin, note: note.trim(), status: "draft", enHash: en.hash, readMs: 0, acks: {},
+    aiScore: null, aiIssues: [], review: aiReady() ? "pending" : "off" });
+  refreshMsg(m);
+  log(origin === "ai" ? "AI" : "System", `${LANG_NAME[lang]} translation created`, { key: key(aud, lang), hash: m.hash, detail: origin === "ai" ? "Tile AI" : "reference translation (demo)" });
+  render();
+}
+
+async function reviewAudience(aud, seq) {
+  const langs = LANGS.filter((l) => { const m = S.msgs[key(aud, l)]; return m && m.status === "draft" && bullets(m).some((x) => x.b.text.trim()); });
+  if (!langs.length) return;
+  const hashes = Object.fromEntries(langs.map((l) => [l, S.msgs[key(aud, l)].hash]));
+  langs.forEach((l) => { S.msgs[key(aud, l)].review = "pending"; });
+  S.review[aud] = "running";
+  render();
+  try {
+    const r = await aiReview(aud, langs);
+    if (seq !== S.seq[aud]) return;
+    for (const l of langs) {
+      const m = S.msgs[key(aud, l)], x = r[l];
+      if (!m || m.hash !== hashes[l]) continue;
+      m.aiScore = x && typeof x.score === "number" ? Math.round(clamp(x.score, 0, 100)) : null;
+      m.aiIssues = x && Array.isArray(x.issues) ? x.issues.filter((i) => i && typeof i.problem === "string").slice(0, 6) : [];
+      m.review = m.aiScore == null ? "failed" : "done";
+      refreshMsg(m);
+      log("AI", "Reviewed", { key: key(aud, l), hash: m.hash, detail: m.aiScore == null ? "no score returned" : `accuracy ${m.aiScore}%, ${m.aiIssues.length} issue(s)` });
+    }
+    S.review[aud] = "done";
+  } catch (e) {
+    if (seq !== S.seq[aud]) return;
+    S.review[aud] = "failed: " + aiErrorText(e);
+    for (const l of langs) { const m = S.msgs[key(aud, l)]; if (m.hash === hashes[l]) { m.review = "failed"; refreshMsg(m); } }
+    log("System", "AI review failed", { detail: `${AUD[aud].label}: ${aiErrorText(e)}` });
+  }
+  render();
+}
+
+/* Cross-lingual embeddings: cosine of each English point with its translation. */
+async function computeSimilarity(aud, seq) {
+  const ms = LANGS.map((l) => S.msgs[key(aud, l)]);
+  if (ms.some((m) => !m || m.status === "generating")) return;
+  const labels = bullets(ms[0]).map((x) => x.b.src[0] || `${x.s[0].toUpperCase()}${x.i + 1}`);
+  const texts = ms.map((m) => bullets(m).map((x) => x.b.text || "(empty)"));
+  const input = texts.flat();
+  if (!input.length || input.length > 96) { S.simState[aud] = "too many points to compare"; render(); return; }
+  const hashes = ms.map((m) => m.hash);
+  S.simState[aud] = "running"; render();
+  try {
+    const r = await withTimeout(tile.ai.embed({ input }), 45000);
+    meter(r);
+    if (seq !== S.seq[aud]) return;
+    if (!r || !Array.isArray(r.embeddings) || r.embeddings.length !== input.length) throw new Error("unexpected embedding result");
+    const cut = [0, texts[0].length, texts[0].length + texts[1].length, input.length];
+    const vecs = [0, 1, 2].map((i) => r.embeddings.slice(cut[i], cut[i + 1]));
+    const cos = (a, b) => { let d = 0, x = 0, y = 0; for (let i = 0; i < a.length; i++) { d += a[i] * b[i]; x += a[i] * a[i]; y += b[i] * b[i]; } return d / (Math.sqrt(x * y) || 1); };
+    const mat = (j) => vecs[0].map((a) => vecs[j].map((b) => cos(a, b)));
+    const diag = (M) => { const n = Math.min(M.length, M[0]?.length || 0); let s = 0; for (let i = 0; i < n; i++) s += M[i][i]; return n ? s / n : 0; };
+    const de = mat(1), fr = mat(2);
+    S.sim[aud] = { at: nowUtc(true), labels, texts, hashes, de: { M: de, mean: diag(de) }, fr: { M: fr, mean: diag(fr) } };
+    S.simState[aud] = "done";
+    log("AI", "Similarity computed", { detail: `${AUD[aud].label}: EN→DE ${diag(de).toFixed(2)}, EN→FR ${diag(fr).toFixed(2)}` });
+  } catch (e) {
+    if (seq !== S.seq[aud]) return;
+    S.simState[aud] = aiErrorText(e);
+  }
+  render();
+}
+
+/* =====================================================================
+   SMC decisions
+   ===================================================================== */
+function approve(k) {
+  const m = S.msgs[k];
+  if (!gate(m).ok || EDIT_MODE) return;
+  m.status = "approved"; m.approvedHash = m.hash; m.approvedAt = nowUtc(true);
+  log("SMC", "Approved", { key: k, hash: m.hash, detail: `read ${Math.round(m.readMs / 100) / 10} s, ${Object.keys(m.acks).length} note(s) confirmed` });
+  /* Move on to the next language that still needs a decision. */
+  const next = LANGS.find((l) => neededLangs(m.aud).includes(l) && S.msgs[key(m.aud, l)]?.status === "draft");
+  if (next) S.view[m.aud] = next;
+  render();
+}
+function withdraw(k) {
+  const m = S.msgs[k];
+  m.status = "draft"; m.approvedHash = null; m.approvedAt = null;
+  log("SMC", "Approval withdrawn", { key: k, hash: m.hash });
+  render();
+}
+function reject(k) {
+  S.msgs[k].status = "rejected";
+  log("SMC", "Rejected", { key: k, hash: S.msgs[k].hash });
+  render();
+}
+function redraft(k) {
+  const m = S.msgs[k];
+  log("SMC", "Redraft requested", { key: k });
+  if (m.lang === "en") generateAudience(m.aud);
+  else retranslate(m.aud, m.lang);
+}
+async function retranslate(aud, lang) {
+  const seq = S.seq[aud];
+  delete S.edits[key(aud, lang)];
+  await translateInto(aud, lang, seq);
+  await afterDrafts(aud, seq);
+}
+function startEdit(k) {
+  const m = S.msgs[k];
+  S.edits[k] = Object.fromEntries(SECTIONS.map((s) => [s, m.sections[s].map((b) => b.text)]));
+  render();
+}
+function saveEdit(k) {
+  const m = S.msgs[k], d = S.edits[k];
+  const before = m.hash;
+  SECTIONS.forEach((s) => m.sections[s].forEach((b, i) => { b.text = (d[s][i] || "").trim(); }));
+  delete S.edits[k];
+  if (m.lang !== "en") m.enHash = S.msgs[key(m.aud, "en")].hash; // the SMC takes responsibility for matching the current English
+  Object.assign(m, { origin: "edited", status: "draft", readMs: 0, acks: {}, aiScore: null, aiIssues: [], review: aiReady() ? "pending" : "off" });
+  refreshMsg(m);
+  log("SMC", "Edited", { key: k, hash: m.hash, detail: `before ${shortHash(before)}` });
+  render();
+  afterDrafts(m.aud, S.seq[m.aud]);
+}
+function toggleRecipient(id, on) {
+  if (on) S.unselected.delete(id); else S.unselected.add(id);
+  const p = DIRECTORY.find((x) => x.id === id);
+  log("SMC", on ? "Recipient included" : "Recipient excluded", { detail: `${p.name} (${p.role}, ${p.lang.toUpperCase()})` });
+  render();
+}
+
+function sendState(aud) {
+  const total = LANGS.reduce((n, l) => n + recipients(aud, l).length, 0);
+  if (!total) return { ok: false, why: "No recipients selected" };
+  const msgs = neededLangs(aud).map((l) => S.msgs[key(aud, l)]);
+  if (msgs.some((m) => !m || m.status === "generating")) return { ok: false, why: "Drafting…" };
+  if (msgs.some((m) => m.basis !== basisOf(aud))) return { ok: false, why: "Record changed, redrafting" };
+  const pending = neededLangs(aud).filter((l) => S.msgs[key(aud, l)].status !== "approved");
+  if (pending.length) return { ok: false, why: `${neededLangs(aud).length - pending.length} of ${neededLangs(aud).length} approved` };
+  const sentAll = LANGS.filter((l) => recipients(aud, l).length).every((l) => { const m = S.msgs[key(aud, l)]; return m.sent && m.sent.hash === m.hash; });
+  if (sentAll) return { ok: false, why: `Sent ${S.msgs[key(aud, "en")].sent?.at || ""}`.trim(), sent: true };
+  return { ok: true, why: `Ready for ${total} recipient${total === 1 ? "" : "s"}` };
+}
+
+function simulateSend(aud) {
+  if (EDIT_MODE || !sendState(aud).ok) return;
+  for (const l of neededLangs(aud)) {
+    const m = S.msgs[key(aud, l)];
+    const recheck = sha256(canonical(m));
+    if (recheck !== m.approvedHash) {
+      log("System", "Send blocked", { key: key(aud, l), hash: recheck, detail: `text differs from approved hash ${shortHash(m.approvedHash)}` });
+      S.bannerKind = "warn"; S.banner = `Send blocked: the ${LANG_NAME[l]} message for ${AUD[aud].label} no longer matches what you approved.`;
+      render(); return;
+    }
+  }
+  const at = nowUtc(true);
+  for (const l of LANGS) {
+    const people = recipients(aud, l);
+    if (!people.length) continue;
+    const m = S.msgs[key(aud, l)];
+    m.sent = { at, hash: m.hash, rev: m.rev };
+    log("SMC", "Simulated send", { key: key(aud, l), hash: m.hash, detail: `to ${people.map((p) => p.name).join(", ")}; matches approved hash` });
+  }
+  for (const l of neededLangs(aud)) if (!recipients(aud, l).length) S.msgs[key(aud, l)].sent = { at, hash: S.msgs[key(aud, l)].hash, rev: S.msgs[key(aud, l)].rev };
+  S.bannerKind = "info";
+  S.banner = `Simulated send to ${AUD[aud].label} at ${at}. Every text matched what you approved.`;
+  render();
+}
+
+/* =====================================================================
+   Rendering
+   ===================================================================== */
+function renderSvc() {
+  const el = $("svc"), a = S.ai;
+  el.dataset.state = a.state;
+  if (a.state === "checking") el.textContent = "Checking AI";
+  else if (a.state === "ready") el.textContent = `AI on · ${a.calls} calls · ${a.tokens.toLocaleString("en-US")} tokens` + (a.costKnown ? ` · $${a.cost.toFixed(4)}` : "") + (EDIT_MODE ? " · paused" : "");
+  else el.textContent = "Demo mode";
+  el.title = a.state === "ready" ? `Model: ${a.model || "tile default"}${a.residency ? " (" + a.residency.toUpperCase() + ")" : ""}` : a.message;
+}
+
+function renderHero() {
+  const r = S.rec;
+  const routing = r.severity === "major" ? "ATCO supervisors, engineering and management are informed." : "ATCO supervisors and engineering are informed. Management is not.";
+  const kids = [
+    h("p", { class: "kicker" }, `${r.system} · ${r.id} · ${r.location}`),
+    h("h1", null, r.title),
+    h("div", { class: "facts" }, h("span", { class: "sev " + r.severity }, r.severity === "major" ? "Major incident" : "Minor incident"), h("span", null, routing))
+  ];
+  if (S.ai.state !== "ready" && S.ai.state !== "checking") kids.push(h("p", { class: "modeline" }, S.ai.message));
+  if (S.ai.reason === "not-enabled") kids.push(h("p", { class: "setup" }, "Admin setup: if you are not approved yet, choose Request AI access in Tile and wait for approval. Then enable AI for this tile under Manage → Services, acknowledge provider egress, and reload."));
+  if (EDIT_MODE) kids.push(h("p", { class: "modeline" }, "Edit mode: drafting and sending are paused."));
+  if (S.banner) kids.push(h("div", { class: "banner" + (S.bannerKind === "info" ? " info" : ""), role: "status" }, S.banner));
+  $("hero").replaceChildren(...kids);
+}
+
+function renderRecord() {
+  const r = S.rec;
+  const next = SCENARIOS[S.scn].updates[S.updIdx];
+  const secs = SECTIONS.map((s) => {
+    const items = r.items.filter((i) => i.section === s);
+    return h("div", { class: "rsec " + s },
+      h("h3", null, SEC_LABEL.en[s]),
+      items.length ? h("ul", null, items.map((it) => h("li", { class: "ritem" + (S.changedItems.has(it.id) ? " changed" : ""), id: "rec-" + it.id },
+        h("p", null, it.text),
+        h("p", { class: "meta" }, `${it.id} · ${it.aud.map((a) => AUD[a].short).join(" ")}`))))
+        : h("p", { class: "ritem meta" }, "Nothing reported."));
+  });
+  $("record").replaceChildren(
+    h("div", { class: "record-head" }, h("h2", null, "Incident record"), h("span", { class: "lock" }, "Read-only")),
+    h("p", { class: "rev" }, `Revision ${r.revision} · ${r.updatedAt}`),
+    ...secs,
+    h("div", { class: "next" },
+      next ? [h("p", null, h("b", null, `Next update · ${next.updatedAt}`), h("br"), next.label),
+        h("button", { class: "btn blue", type: "button", disabled: EDIT_MODE, onclick: applyNextUpdate }, "Apply record update")]
+        : h("p", null, "No further updates in this scenario."))
+  );
+}
+
+function srcChip(id) {
+  const target = () => document.getElementById("rec-" + id);
+  return h("button", { class: "src", type: "button", "aria-label": `Show record item ${id}`,
+    onmouseenter: () => target()?.classList.add("hl"), onmouseleave: () => target()?.classList.remove("hl"),
+    onfocus: () => target()?.classList.add("hl"), onblur: () => target()?.classList.remove("hl"),
+    onclick: () => target()?.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }) }, id);
+}
+
+function metric(label, value, method, warn) {
+  const muted = value == null || value === "n/a" || value === "failed";
+  return h("div", { class: "metric" },
+    h("p", { class: "k" }, label),
+    h("p", { class: "v" + (muted ? " muted" : warn ? " warn" : "") }, value == null ? "…" : value),
+    h("p", { class: "m" }, method));
+}
+function metricsRow(aud) {
+  const acc = (l) => accuracy(S.msgs[key(aud, l)]);
+  const pct = (a) => a.v == null ? null : a.v + "%";
+  const sim = S.sim[aud], st = S.simState[aud];
+  const ms = LANGS.map((l) => S.msgs[key(aud, l)]);
+  const stale = sim && ms.some((m, i) => !m || m.hash !== sim.hashes[i]);
+  const simVal = (l) => !aiReady() ? "n/a" : sim && !stale ? sim[l].mean.toFixed(2) : st && st !== "running" && st !== "done" ? "failed" : null;
+  const simHow = !aiReady() ? "needs Tile AI" : stale ? "text changed" : st && st !== "running" && st !== "done" ? st : "embedding cosine";
+  const en = acc("en"), de = acc("de"), fr = acc("fr");
+  return h("div", { class: "metrics", role: "group", "aria-label": "Accuracy of this message" },
+    metric("Retrieval accuracy · EN", pct(en), en.how, en.v != null && en.v < 100),
+    metric("Translation accuracy · DE", pct(de), de.how, de.v != null && de.v < 100),
+    metric("Translation accuracy · FR", pct(fr), fr.how, fr.v != null && fr.v < 100),
+    metric("Similarity · EN→DE", simVal("de"), simHow, sim && !stale && sim.de.mean < 0.75),
+    metric("Similarity · EN→FR", simVal("fr"), simHow, sim && !stale && sim.fr.mean < 0.75));
+}
+
+function langDot(aud, l) {
+  const m = S.msgs[key(aud, l)];
+  if (!m || m.status === "generating") return "busy";
+  if (m.status === "approved") return "ok";
+  if (m.status === "rejected") return "bad";
+  if (!neededLangs(aud).includes(l)) return "";
+  return m.flags.length ? "attn" : "";
+}
+
+function renderMessage(aud, lang) {
+  const k = key(aud, lang), m = S.msgs[k], lbl = SEC_LABEL[lang];
+  if (!m || m.status === "generating")
+    return h("div", { class: "msg" }, h("p", { class: "placeholder" }, lang === "en" ? `Drafting from record revision ${S.rec.revision}…` : `Translating into ${LANG_NAME[lang]}…`));
+  const edit = S.edits[k];
+  const issueAt = new Set(m.aiIssues.map((x) => x.section + ":" + x.index));
+  return h("article", { class: "msg" + (m.status === "approved" ? " approved" : ""), "data-key": k, "aria-label": `${AUD[aud].label} message in ${LANG_NAME[lang]}` },
+    h("p", { class: "from" }, `${S.rec.system} · ${S.rec.id}`),
+    h("p", { class: "title" }, `${SEV_LABEL[lang][S.rec.severity]} · ${UPD_LABEL[lang]} ${m.rev}`),
+    SECTIONS.filter((s) => m.sections[s].length).map((s) => h("section", { class: "msec " + s },
+      h("h3", null, lbl[s]),
+      edit
+        ? m.sections[s].map((b, i) => h("textarea", { "aria-label": `${lbl[s]}, point ${i + 1}`, oninput: (e) => { edit[s][i] = e.target.value; } }, edit[s][i]))
+        : h("ul", null, m.sections[s].map((b, i) => h("li", { class: (b.text ? "" : "missing") + (issueAt.has(s + ":" + i) ? " flagged" : "") },
+            b.text || "Translation missing. Choose Edit to write it.",
+            S.showSources ? b.src.map(srcChip) : null))))));
+}
+
+function renderDecision(aud, lang) {
+  const k = key(aud, lang), m = S.msgs[k];
+  if (!m || m.status === "generating") return [];
+  const out = [];
+  const needed = neededLangs(aud).includes(lang);
+  if (m.flags.length && m.status !== "approved" && !S.edits[k]) out.push(h("div", { class: "flags" }, m.flags.map((f) => f.blocking
+    ? h("p", { class: "flag blocking" }, f.text)
+    : h("label", { class: "flag" }, h("input", { type: "checkbox", checked: !!m.acks[f.id],
+        onchange: (e) => { if (e.target.checked) m.acks[f.id] = true; else delete m.acks[f.id]; updateGate(k); } }), h("span", null, f.text)))));
+  const row = h("div", { class: "decide" });
+  if (S.edits[k]) {
+    row.append(h("button", { class: "btn blue", type: "button", onclick: () => saveEdit(k) }, "Save edit"),
+      h("button", { class: "btn", type: "button", onclick: () => { delete S.edits[k]; render(); } }, "Cancel"));
+  } else if (m.status === "approved") {
+    row.append(h("span", { class: "ok" }, `✓ Approved ${m.approvedAt}`), h("button", { class: "btn ghost", type: "button", onclick: () => withdraw(k) }, "Withdraw approval"));
+  } else if (m.status === "rejected") {
+    row.append(h("span", { class: "bad" }, "Rejected"),
+      h("button", { class: "btn", type: "button", disabled: EDIT_MODE, onclick: () => redraft(k) }, lang === "en" ? "Redraft all languages" : "Translate again"),
+      h("button", { class: "btn ghost", type: "button", onclick: () => startEdit(k) }, "Edit"));
+  } else {
+    const g = gate(m);
+    row.append(
+      h("button", { class: "btn blue approve", type: "button", "data-approve": k, disabled: !g.ok || EDIT_MODE, style: `--p:${clamp(m.readMs / needMs(m), 0, 1)}`, onclick: () => approve(k) }, h("span", null, "Approve")),
+      h("button", { class: "btn", type: "button", onclick: () => startEdit(k) }, "Edit"),
+      h("button", { class: "btn ghost", type: "button", onclick: () => reject(k) }, "Reject"));
+    if (lang !== "en" && m.flags.some((f) => f.id === "chk:basis"))
+      row.append(h("button", { class: "btn", type: "button", disabled: EDIT_MODE, onclick: () => retranslate(aud, lang) }, "Translate again"));
+    row.append(h("span", { class: "why", "data-why": k }, needed ? g.why : "No recipients in this language. Approve anyway or skip."));
+  }
+  out.push(row);
+  const meta = [m.note, `${{ ai: "Drafted by Tile AI", rule: "Taken from the record", demo: "Reference translation", edited: "Edited by you", none: "" }[m.origin]} · sha256 ${shortHash(m.hash)}`].filter(Boolean).join(" · ");
+  out.push(h("p", { class: "note", title: m.hash }, meta));
+  return out;
+}
+
+function renderGroup(aud) {
+  const lang = S.view[aud];
+  const st = sendState(aud);
+  const people = DIRECTORY.filter((p) => p.aud === aud);
+  const selected = people.filter((p) => !S.unselected.has(p.id)).length;
+  const langPeople = people.filter((p) => p.lang === lang);
+  const sim = S.sim[aud];
+  return h("article", { class: "card group", "aria-labelledby": "g-" + aud },
+    h("div", { class: "ghead" },
+      h("div", null, h("h2", { id: "g-" + aud }, AUD[aud].label), h("p", { class: "sub" }, `${selected} of ${people.length} recipients · ${itemsFor(aud).length} record items`)),
+      h("div", { class: "sendbox" },
+        h("span", { class: "why" + (st.sent ? " done" : "") }, st.why),
+        h("button", { class: "btn dark", type: "button", disabled: !st.ok || EDIT_MODE, onclick: () => simulateSend(aud) }, "Simulate send"))),
+    metricsRow(aud),
+    h("div", { class: "seg", role: "tablist", "aria-label": "Language" }, LANGS.map((l) => h("button", { type: "button", role: "tab", "aria-selected": String(l === lang),
+      onclick: () => { S.view[aud] = l; render(); } }, h("span", { class: "dot " + langDot(aud, l), "aria-hidden": "true" }), LANG_NAME[l]))),
+    h("div", { class: "to" }, h("span", null, "To"),
+      langPeople.length ? langPeople.map((p) => h("label", { class: "chip", title: p.role },
+        h("input", { type: "checkbox", checked: !S.unselected.has(p.id), onchange: (e) => toggleRecipient(p.id, e.target.checked) }), p.name))
+        : h("span", null, "Nobody. The English text is the master for the translations.")),
+    renderMessage(aud, lang),
+    ...renderDecision(aud, lang),
+    sim ? h("details", { class: "more" }, h("summary", null, "Show similarity matrix"),
+      h("div", { class: "heatmaps" }, heatmap(sim, "de"), heatmap(sim, "fr")),
+      h("div", { class: "legend" }, h("span", null, "≤ 0.30"), h("span", { class: "ramp" }), h("span", null, "1.00")),
+      h("p", { class: "note" }, "Each cell compares one English point with one translated point. A bright diagonal means each point matches its own translation. Supporting evidence only.")) : null);
+}
+
+function renderGroups() {
+  const active = audiencesFor();
+  $("groups").replaceChildren(...AUD_ORDER.map((aud) => active.includes(aud) ? renderGroup(aud)
+    : h("div", { class: "card not-informed" }, h("h2", null, AUD[aud].label), h("p", null, "Not informed. Management only receives messages for major incidents."))));
+  observeMessages();
+}
+
+const RAMP = ["#cde2fb", "#b7d3f6", "#9ec5f4", "#86b6ef", "#6da7ec", "#5598e7", "#3987e5", "#2a78d6", "#256abf", "#1c5cab", "#184f95", "#104281", "#0d366b"];
+function rampColor(v) { const i = Math.round(clamp((v - 0.3) / 0.7, 0, 1) * (RAMP.length - 1)); return { bg: RAMP[i], ink: i >= 6 ? "#ffffff" : "#1d1d1f" }; }
+
+function heatmap(sim, lang) {
+  const M = sim[lang].M, L = sim.labels, tip = $("tip");
+  const cols = M[0] ? M[0].length : 0;
+  const grid = h("div", { class: "hgrid", style: `grid-template-columns: 28px repeat(${cols}, 26px)` });
+  grid.append(h("span", { class: "ax" }, ""), ...Array.from({ length: cols }, (_, j) => h("span", { class: "ax" }, L[j] || j + 1)));
+  M.forEach((row, i) => {
+    grid.append(h("span", { class: "ax" }, L[i] || i + 1));
+    row.forEach((v, j) => {
+      const c = rampColor(v);
+      const text = `EN ${L[i]}: ${sim.texts[0][i]}\n${lang.toUpperCase()} ${L[j]}: ${sim.texts[lang === "de" ? 1 : 2][j]}\ncosine ${v.toFixed(3)}`;
+      const show = (e) => { tip.textContent = text; tip.hidden = false; const r = e.target.getBoundingClientRect(); tip.style.left = Math.max(8, Math.min(r.right + 8, innerWidth - 330)) + "px"; tip.style.top = r.top + "px"; };
+      grid.append(h("span", { class: "cell", tabindex: "0", role: "img", "aria-label": `EN ${L[i]} versus ${lang.toUpperCase()} ${L[j]}: ${v.toFixed(2)}`,
+        style: `background:${c.bg};color:${c.ink}`, onmouseenter: show, onfocus: show, onmouseleave: () => { tip.hidden = true; }, onblur: () => { tip.hidden = true; } },
+        i === j ? v.toFixed(2).slice(1) : ""));
+    });
+  });
+  return h("div", { class: "hm" }, h("h3", null, `English → ${LANG_NAME[lang]} · ${sim[lang].mean.toFixed(2)}`), grid);
+}
+
+function renderLog() {
+  if (!$("log").open) return;
+  const rows = [];
+  for (const aud of audiencesFor()) for (const l of LANGS) {
+    const m = S.msgs[key(aud, l)];
+    if (!m) continue;
+    const failed = m.checks.filter((c) => !c.ok);
+    const a = accuracy(m);
+    rows.push(h("tr", null,
+      h("td", null, `${AUD[aud].short} · ${l.toUpperCase()}`), h("td", null, m.status),
+      h("td", null, a.v == null ? "—" : `${a.v}% (${l === "en" ? "retrieval" : "translation"})`),
+      h("td", null, m.status === "generating" ? "—" : failed.length ? h("span", { class: "fail" }, failed.map((c) => c.label).join("; ")) : h("span", { class: "pass" }, `All ${m.checks.length} pass`)),
+      h("td", { class: "mono", title: m.hash }, shortHash(m.hash)),
+      h("td", { class: "mono" }, m.approvedHash ? (m.approvedHash === m.hash ? "matches" : "differs") : "—")));
+  }
+  const dl = () => {
+    const blob = new Blob([JSON.stringify({ incident: S.rec.id, exportedAt: new Date().toISOString(), entries: S.log }, null, 2)], { type: "application/json" });
+    const a = h("a", { href: URL.createObjectURL(blob), download: `${S.rec.id}-audit.json` });
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+  $("logbody").replaceChildren(
+    h("h3", null, "Verification"),
+    h("p", null, "Rule checks run on every message. The hash is SHA-256 of the exact text; at send it is recomputed and compared with the hash you approved."),
+    h("table", null, h("thead", null, h("tr", null, ["Message", "Status", "Accuracy", "Checks", "Hash", "Approved hash"].map((x) => h("th", { scope: "col" }, x)))), h("tbody", null, rows)),
+    h("div", { class: "logbar" }, h("h3", null, "Activity log"), h("button", { class: "btn ghost", type: "button", onclick: dl }, "Download JSON")),
+    h("table", null, h("thead", null, h("tr", null, ["Time", "Who", "Event", "Message", "Rev", "Hash", "Detail"].map((x) => h("th", { scope: "col" }, x)))),
+      h("tbody", null, S.log.slice().reverse().map((e) => h("tr", null,
+        h("td", { class: "mono" }, e.time), h("td", null, e.actor === "SMC" ? `SMC · ${e.who}` : e.actor), h("td", null, e.event),
+        h("td", { class: "mono" }, e.message), h("td", { class: "mono" }, e.revision ?? ""), h("td", { class: "mono", title: e.hash }, shortHash(e.hash)), h("td", null, e.detail))))));
+}
+
+function render() {
+  renderSvc();
+  renderHero();
+  renderRecord();
+  renderGroups();
+  renderLog();
+}
+
+/* Update one approve button without re-rendering (keeps focus and scroll). */
+function updateGate(k) {
+  const m = S.msgs[k];
+  const btn = document.querySelector(`[data-approve="${k}"]`);
+  if (!m || !btn) return;
+  const g = gate(m);
+  btn.disabled = !g.ok || EDIT_MODE;
+  btn.style.setProperty("--p", clamp(m.readMs / needMs(m), 0, 1));
+  const why = document.querySelector(`[data-why="${k}"]`);
+  if (why && neededLangs(m.aud).includes(m.lang)) why.textContent = g.why;
+}
+
+/* =====================================================================
+   Reading gate: time a message spends at least 60% on screen while the
+   tab is visible and focused counts as reading time.
+   ===================================================================== */
+const visible = new Set();
+const io = "IntersectionObserver" in window ? new IntersectionObserver((entries) => {
+  for (const e of entries) { const k = e.target.dataset.key; if (e.intersectionRatio >= 0.6) visible.add(k); else visible.delete(k); }
+}, { threshold: [0, 0.6, 1] }) : null;
+function observeMessages() {
+  visible.clear();
+  if (!io) return;
+  io.disconnect();
+  document.querySelectorAll(".msg[data-key]").forEach((el) => io.observe(el));
+}
+setInterval(() => {
+  if (document.visibilityState !== "visible" || !document.hasFocus()) return;
+  for (const k of visible) {
+    const m = S.msgs[k];
+    if (!m || m.status !== "draft" || S.edits[k] || m.readMs >= needMs(m)) continue;
+    m.readMs += 250;
+    updateGate(k);
+  }
+}, 250);
+
+/* =====================================================================
+   Start-up
+   ===================================================================== */
+async function detectAi() {
+  if (window.__tileLoadFailed || !window.tile || !tile.ai) {
+    Object.assign(S.ai, { state: "demo", message: "Demo mode: the Tile SDK is not loaded. English is taken from the record, translations are bundled references. AI review and similarity are off." });
+    return;
+  }
+  try {
+    const a = await tile.ai.available();
+    if (!a.ok) {
+      const why = { "not-enabled": "AI is not enabled for this tile", "not-a-viewer": "you do not have AI access on this tile; ask a tile admin", unavailable: "AI is temporarily unavailable" }[a.reason] || "AI is not available";
+      Object.assign(S.ai, { state: "off", reason: a.reason, message: `Demo mode: ${why}. English is taken from the record, translations are bundled references.` });
+      return;
+    }
+    const chat = (a.models || []).filter((m) => m.kind === "chat");
+    const eu = chat.find((m) => m.residency === "eu");
+    const dflt = chat.find((m) => m.id === a.default);
+    Object.assign(S.ai, { state: "ready", model: eu ? eu.id : null, residency: (eu || dflt || {}).residency || null });
+  } catch (e) {
+    Object.assign(S.ai, { state: "off", message: "Demo mode: the AI availability check failed. English is taken from the record, translations are bundled references." });
+  }
+}
+async function detectMe() {
+  if (!window.tile || window.__tileLoadFailed) { S.meNote = "local"; S.me = "SMC on shift (local)"; return; }
+  try { const me = await tile.me(); S.me = me.email || "SMC on shift"; S.meNote = me.email ? "ok" : "unknown"; }
+  catch (e) { S.meNote = "failed"; S.me = "SMC on shift (identity check failed)"; }
+}
+
+function startScenario(i) {
+  loadScenario(i);
+  render();
+  if (!EDIT_MODE) audiencesFor().forEach((a) => generateAudience(a));
+}
+
+(async () => {
+  const sel = $("scenario");
+  SCENARIOS.forEach((sc, i) => sel.append(h("option", { value: String(i) }, `${sc.record.system} · ${sc.record.severity}`)));
+  sel.addEventListener("change", () => startScenario(Number(sel.value)));
+  $("sources").addEventListener("change", (e) => { S.showSources = e.target.checked; renderGroups(); });
+  $("log").addEventListener("toggle", renderLog);
+  loadScenario(0);
+  render();
+  await Promise.all([detectAi(), detectMe()]);
+  log("System", "Session started", { detail: S.ai.state === "ready" ? `Tile AI ${S.ai.model || "default model"}` : "demo mode" });
+  render();
+  if (!EDIT_MODE) audiencesFor().forEach((a) => generateAudience(a));
+})();
+</script>
 </body>
 </html>

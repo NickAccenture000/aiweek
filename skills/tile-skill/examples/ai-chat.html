@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Private AI chat</title>
+    <script src="/vendor/tile.js"></script>
+  </head>
+  <body>
+    <p>Admin setup: if not approved yet, choose Request AI access in Tile and wait for approval. Then enable AI under Manage → Services and publish the tile.</p>
+    <form id="chat">
+      <label for="prompt">Question</label>
+      <textarea id="prompt" required></textarea>
+      <button disabled>Send</button>
+    </form>
+    <p id="status" role="status"></p>
+    <pre id="answer"></pre>
+    <script>
+      const form = document.querySelector("#chat");
+      const prompt = document.querySelector("#prompt");
+      const status = document.querySelector("#status");
+      const answer = document.querySelector("#answer");
+      const send = form.querySelector("button");
+      const messages = [];
+      let controller = null;
+      window.addEventListener("pagehide", () => controller?.abort());
+
+      (async () => {
+        const availability = await tile.ai.available();
+        if (!availability.ok) {
+          status.textContent = availability.reason === "not-enabled"
+            ? "Admin: confirm this tile is published and enable AI under Manage → Services. If approval is missing, choose Request AI access first."
+            : availability.reason === "not-a-viewer"
+              ? "You do not have access to AI on this tile. Ask a tile admin to check viewer access."
+              : availability.reason === "unavailable"
+                ? "AI is temporarily unavailable."
+                : "AI is not available for this tile.";
+          return;
+        }
+        send.disabled = false;
+      })();
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (controller) return;
+        const question = prompt.value.trim();
+        if (!question) return;
+        controller = new AbortController();
+        send.disabled = true;
+        answer.textContent = "";
+        status.textContent = "Generating…";
+        let reply = "";
+        try {
+          for await (const chunk of tile.ai.chat(
+            { messages: [...messages, { role: "user", content: question }] },
+            { signal: controller.signal }
+          )) {
+            if (chunk.type === "token") {
+              reply += chunk.text;
+              answer.textContent = reply;
+            }
+            if (chunk.type === "error") status.textContent = chunk.error;
+            if (chunk.type === "done") {
+              if (reply) messages.push({ role: "user", content: question }, { role: "assistant", content: reply });
+              prompt.value = "";
+              status.textContent = "Complete";
+            }
+          }
+        } catch (error) {
+          if (error?.name === "AbortError") return;
+          if (!(error instanceof tile.TileSvcError)) status.textContent = "AI is temporarily unavailable.";
+          else if (error.status === 404) status.textContent = "Admin: confirm this tile is published and enable AI under Manage → Services. If approval is missing, choose Request AI access first.";
+          else if (error.status === 429) status.textContent = "The daily AI budget is exhausted.";
+          else if (error.status === 413) status.textContent = "The conversation is too long. Reload to start again.";
+          else if (error.status === 503) status.textContent = "AI is temporarily unavailable.";
+          else status.textContent = error.error;
+        } finally {
+          controller = null;
+          send.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>

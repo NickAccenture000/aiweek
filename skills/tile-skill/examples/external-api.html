@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="utf-8" /><title>Approved event feed</title><script src="/vendor/tile.js"></script></head>
+  <body>
+    <button id="connect">Connect</button>
+    <pre id="output"></pre>
+    <script>
+      const button = document.querySelector("#connect");
+      const output = document.querySelector("#output");
+      let controller = null;
+      window.addEventListener("pagehide", () => controller?.abort());
+
+      button.addEventListener("click", async () => {
+        if (controller) return;
+        controller = new AbortController();
+        button.disabled = true;
+        output.textContent = "";
+        try {
+          for await (const event of tile.api.stream("events", "v1/feed/", {
+            method: "GET",
+            signal: controller.signal
+          })) {
+            if (event.svcError) output.textContent += `Broker: ${event.error}\n`;
+            else if (event.status && (event.status < 200 || event.status >= 300)) {
+              output.textContent += `Upstream answered ${event.status}\n`;
+            } else output.textContent += `${JSON.stringify(event.data)}\n`;
+          }
+        } catch (error) {
+          if (error.name !== "AbortError") {
+            output.textContent = error instanceof tile.TileSvcError && error.status === 429
+              ? "The daily request quota for this connection is spent."
+              : `Could not open stream: ${error.message}`;
+          }
+        } finally {
+          controller = null;
+          button.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>

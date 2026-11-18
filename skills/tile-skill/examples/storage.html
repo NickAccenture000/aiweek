@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="utf-8" /><title>Saved filters and reports</title><script src="/vendor/tile.js"></script></head>
+  <body>
+    <p>Admin setup: enable Files under Manage → Services for saved filters and PDFs.</p>
+    <label><input id="open-only" type="checkbox" /> Open items only</label>
+    <button id="save">Save my filters</button>
+    <input id="pdf" type="file" accept="application/pdf" />
+    <button id="upload">Upload shared PDF</button>
+    <ul id="reports"></ul>
+    <p id="status" role="status"></p>
+    <script>
+      const status = document.querySelector("#status");
+      const openOnly = document.querySelector("#open-only");
+      const FILTERS = "prefs/filters.json";
+
+      async function loadReports() {
+        const { items } = await tile.files.list({ scope: "shared", prefix: "reports/" });
+        document.querySelector("#reports").replaceChildren(...items.map((item) => {
+          const li = document.createElement("li");
+          const link = document.createElement("a");
+          link.href = tile.files.getUrl(item.key, { scope: "shared" });
+          link.textContent = item.filename;
+          li.append(link);
+          return li;
+        }));
+      }
+
+      (async () => {
+        try {
+          await loadReports();
+          const saved = await tile.files.get(FILTERS, { scope: "user" });
+          if (saved.ok) openOnly.checked = (await saved.json()).openOnly === true;
+          else if (saved.status !== 404) status.textContent = "Saved filters are unavailable; showing defaults.";
+        } catch (error) {
+          status.textContent = error instanceof tile.TileSvcError && error.status === 404
+            ? "Admin: confirm this tile is published and enable Files under Manage → Services."
+            : "Saved filters and reports are unavailable.";
+        }
+      })();
+
+      document.querySelector("#save").addEventListener("click", async () => {
+        if (window.__PAGES_EDIT__) return;
+        try {
+          await tile.files.put(FILTERS, JSON.stringify({ openOnly: openOnly.checked }), {
+            scope: "user", contentType: "application/json"
+          });
+          status.textContent = "Filters saved";
+        } catch (error) {
+          const code = error instanceof tile.TileSvcError ? error.status : 0;
+          status.textContent = code === 404 ? "Filters are active but not saved. Admin: confirm this tile is published and enable Files under Manage → Services."
+            : code === 429 ? "Filters are active but not saved: your storage quota is full."
+            : "Filters are active but could not be saved.";
+        }
+      });
+
+      document.querySelector("#upload").addEventListener("click", async () => {
+        if (window.__PAGES_EDIT__) return;
+        const file = document.querySelector("#pdf").files[0];
+        if (!file) return;
+        try {
+          await tile.files.put(`reports/${crypto.randomUUID()}.pdf`, file, {
+            scope: "shared", contentType: file.type, filename: file.name
+          });
+          status.textContent = "PDF uploaded";
+          loadReports().catch(() => { status.textContent = "PDF uploaded; reload to see it"; });
+        } catch (error) {
+          const code = error instanceof tile.TileSvcError ? error.status : 0;
+          status.textContent = code === 404 ? "PDF not uploaded. Admin: confirm this tile is published and enable Files under Manage → Services."
+            : code === 413 ? "PDF is too large"
+            : code === 429 ? "Storage for this tile is full"
+            : "Upload failed; try again";
+        }
+      });
+    </script>
+  </body>
+</html>
