@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tests</title>
+  <style>
+    body { font: 15px/1.5 system-ui, sans-serif; margin: 2rem; max-width: 60rem; }
+    ul { list-style: none; padding-left: 0; } li { padding: 2px 0; }
+    .fail { color: #b00020; } .pass { color: #1b5e20; }
+    #test-root { position: absolute; left: -9999px; }
+  </style>
+</head>
+<body>
+  <div id="out">Running…</div>
+  <div id="test-root"></div>
+  <script src="src/data/records.js"></script>
+  <script src="src/data/inbox.js"></script>
+  <script src="src/data/contacts.js"></script>
+  <script src="src/data/roleRules.js"></script>
+  <script src="src/data/glossary.js"></script>
+  <script src="src/data/drafts.js"></script>
+  <script src="src/lib/recipients.js"></script>
+  <script src="src/lib/label.js"></script>
+  <script src="src/lib/render.js"></script>
+  <script src="src/lib/diff.js"></script>
+  <script src="src/lib/checks.js"></script>
+  <script src="src/ui/views.js"></script>
+  <script src="src/ui/app.js"></script>
+  <script src="tests/runner.js"></script>
+  <script src="tests/recipients.test.js"></script>
+  <script src="tests/render.test.js"></script>
+  <script src="tests/checks.test.js"></script>
+  <script src="tests/diff.test.js"></script>
+  <script src="tests/app.test.js"></script>
+  <script>
+    window.addEventListener("error", function (e) {
+      document.getElementById("out").innerHTML = "<h1 class=\"fail\">Script error</h1><pre>" + String(e.message) + " @ " + String(e.filename) + ":" + e.lineno + "</pre>";
+    });
+    try { runTests(document.getElementById("out")); }
+    catch (e) { document.getElementById("out").innerHTML = "<h1 class=\"fail\">Runner error</h1><pre>" + e.stack + "</pre>"; }
+  </script>
+</body>
+</html>
