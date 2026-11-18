@@ -9,8 +9,10 @@ During an incident the SMC operator has to tell ATCO supervisors, engineering an
 No Node, npm or build step. Plain HTML, CSS and JavaScript.
 
 - **App:** double-click `index.html`. Use the "Demo" box (bottom right) → *Simulate record update* to go v1 → v2 → v3.
-- **Tests:** double-click `tests.html`. The tab title and the heading show `PASS 42/42` when everything is green.
-- Optional: `powershell -ExecutionPolicy Bypass -File serve.ps1` serves the folder on http://localhost:5173 (used for the in-app browser preview).
+- **Tests:** double-click `tests.html`. The tab title and the heading show `PASS n/n` when everything is green.
+- Optional: `powershell -ExecutionPolicy Bypass -File serve.ps1` serves the folder on http://localhost:5173 (used for the in-app browser preview). Add `-Port 5180` if 5173 is taken.
+
+**Known limitation:** `no_free_facts` catches system and status names only when they are written as glossary terms (in any language, any case). A loose paraphrase such as "the radar is down" is not detected, so edited wording still needs a human read before approval.
 
 ## Flow
 
@@ -36,6 +38,7 @@ src/data/   records, inbox, contacts, roleRules, glossary, drafts (JS files that
 src/lib/    recipients, render, checks, diff, label
 src/ui/     app.js (state + actions), views.js (HTML views)
 tests/      runner.js + *.test.js
+SPEC.md     original hackathon brief · PRODUCT.md, DESIGN.md: product and design intent · CLAUDE.md: notes for Claude Code
 ```
 
 The spec's React/Vite/Vitest stack was replaced by plain browser JavaScript so the project runs without installing anything; behaviour, data, checks and tests follow the spec.

@@ -261,7 +261,8 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
     var rows = v.roles.map(function (r) {
       return "<tr><th>" + short[r.role] + "</th>" + L.LANG_ORDER.map(function (lang) { return cellIcon(v.items[r.role + ":" + lang]); }).join("") + "</tr>";
     }).join("");
-    return "<table class=\"mini-grid\"><thead><tr><th></th><th>EN</th><th>DE</th><th>FR</th></tr></thead><tbody>" + rows + "</tbody></table>";
+    return "<table class=\"mini-grid\"><thead><tr><th></th>" +
+      L.LANG_ORDER.map(function (lang) { return "<th>" + lang + "</th>"; }).join("") + "</tr></thead><tbody>" + rows + "</tbody></table>";
   }
 
   function draftBody(st, it, h) {
@@ -298,7 +299,7 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
   }
 
   function card(st, r, h) {
-    var open = !!st.expandedRoles[r.role], approved = !!st.approved[r.role];
+    var open = !!st.expandedRoles[r.role], approved = r.approved;
     var needs = r.keys.filter(function (i) { return i.needs; }).length;
     var recips = r.keys.filter(function (i) { return !i.reviewOnly; }).length;
     var statusTxt = needs ? "<span class=\"bad\">" + ic("x-circle") + needs + " needs you</span>" : "<span class=\"ok\">" + ic("check-circle") + r.keys.length + " ready</span>";
@@ -390,7 +391,7 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
   views.demo = function (st) {
     var last = st.versionIdx >= D.records.length - 1, le = lastEntry(st);
     var pending = le && confirmedCount(le) < le.messages.length;
-    return "<div class=\"demo-box\"><div class=\"demo-head\"><strong>Demo controls</strong><span>INC00123 · record v" + st.record.version + "/" + D.records.length + "</span></div>" +
+    return "<div class=\"demo-box\"><div class=\"demo-head\"><strong>Demo controls</strong><span>" + esc(st.record.id) + " · record v" + st.record.version + "/" + D.records.length + "</span></div>" +
       "<button class=\"btn sm\" data-action=\"simulate\"" + (last ? " disabled" : "") + ">Simulate record update</button>" +
       "<button class=\"btn sm\" data-action=\"simulate-confirm\"" + (pending ? "" : " disabled") + ">Simulate confirmations</button></div>";
   };
