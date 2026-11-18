@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sprint pulse</title>
+    <script src="/vendor/tile.js"></script>
+  </head>
+  <body>
+    <main>
+      <h1>Sprint pulse</h1>
+      <p>Only the survey owner can read your answer; other colleagues cannot. It is not anonymous: the owner sees your sign-in email with your answer, and you can answer once.</p>
+      <p id="status" role="status" aria-live="polite">Checking survey…</p>
+      <button id="retry" type="button" hidden>Check again</button>
+
+      <form id="survey" hidden>
+        <label for="score">How was this sprint? (1 = poor, 5 = great)</label>
+        <input id="score" name="score" type="number" min="1" max="5" required />
+        <fieldset>
+          <legend>What went well?</legend>
+          <label><input id="area-planning" type="checkbox" /> Planning</label>
+          <label><input id="area-delivery" type="checkbox" /> Delivery</label>
+          <label><input id="area-teamwork" type="checkbox" /> Teamwork</label>
+        </fieldset>
+        <label for="comment">Anything to add?</label>
+        <textarea id="comment" name="comment" maxlength="2000"></textarea>
+        <button id="send" type="submit">Send answer</button>
+      </form>
+      <p id="feedback" role="status" aria-live="polite"></p>
+
+      <section id="owner" hidden>
+        <h2>Responses</h2>
+        <p>Only tile admins and database editors see this view. If a respondent reports seeing it, Write access is not set to “Viewers can only submit”: switch it now.</p>
+        <button id="initialize" type="button" hidden>Create survey table</button>
+        <button id="refresh" type="button" hidden>Refresh responses</button>
+        <button id="export" type="button" hidden>Export CSV</button>
+        <p id="summary"></p>
+        <ul id="distribution"></ul>
+        <table>
+          <caption>Newest 500 responses</caption>
+          <thead><tr>
+            <th scope="col">Who</th><th scope="col">When (UTC)</th><th scope="col">Score</th>
+            <th scope="col">Went well</th><th scope="col">Comment</th>
+          </tr></thead>
+          <tbody id="responses"></tbody>
+        </table>
+      </section>
+
+      <details>
+        <summary>Survey owner setup</summary>
+        <ol>
+          <li>Publish this tile as private and enable Manage → Services → Database (SQLite).</li>
+          <li>Open the tile yourself and choose Create survey table.</li>
+          <li>In Manage → Services → Database (SQLite) → Write access, choose “Viewers can only submit”, tick answers, and choose Save write access.</li>
+          <li>Test the form from a colleague's account: tile admins and database editors cannot submit.</li>
+        </ol>
+      </details>
+    </main>
+    <script>
+      (async () => {
+        const $ = (id) => document.getElementById(id);
+        const TABLE = "answers";
+        const AREAS = ["planning", "delivery", "teamwork"];
+        // tile_submitted_by / tile_submitted_at are filled by the server. Every unique
+        // index must include tile_submitted_by, or the table refuses all submissions.
+        const SCHEMA =
+          "CREATE TABLE IF NOT EXISTS answers (" +
+          " id INTEGER PRIMARY KEY," +
+          " score INTEGER NOT NULL CHECK (score BETWEEN 1 AND 5)," +
+          " areas TEXT NOT NULL DEFAULT '[]'," +
+          " comment TEXT CHECK (comment IS NULL OR length(comment) <= 2000)," +
+          " tile_submitted_by TEXT," +
+          " tile_submitted_at TEXT," +
+          " UNIQUE (tile_submitted_by)" +
+          ") STRICT";
+
+        const status = $("status");
+        const feedback = $("feedback");
+        const retry = $("retry");
+        const form = $("survey");
+        const send = $("send");
+        const owner = $("owner");
+        const initialize = $("initialize");
+        const refresh = $("refresh");
+        const exportButton = $("export");
+        let loaded = null;
+        let stale = false;
+        let busy = false;
+
+        const editing = () => Boolean(window.__PAGES_EDIT__);
+        const codeOf = (error) =>
+          window.tile?.TileSqliteError && error instanceof tile.TileSqliteError ? error.code : null;
+        const statusOf = (error) =>
+          window.tile?.TileSvcError && error instanceof tile.TileSvcError ? error.status : 0;
+        const messageOf = (error) => (error && error.message) || "network error";
+
+        // undefined sqliteAccess means a Tile release without submit-only mode.
+        async function probe() {
+          const role = await tile.role();
+          if (!("sqliteAccess" in role) || typeof tile.sqlite?.submit !== "function") return "unsupported";
+          return role.sqliteAccess;
+        }
+
+        function probeFailure(error) {
+          const code = statusOf(error);
+          if (code === 404) return "Survey unavailable: this tile is not published or you cannot view it.";
+          if (code === 401 || code === 403) return "Your Tile session could not be confirmed. Sign in again, then choose Check again.";
+          return "Could not check the survey (" + messageOf(error) + "). Choose Check again in a moment.";
+        }
+
+        async function start() {
+          retry.hidden = true;
+          status.textContent = "Checking survey…";
+          if (!window.tile) {
+            status.textContent = "Survey unavailable: the Tile SDK did not load. Reload the page; if this persists, tell the survey owner.";
+            return;
+          }
+          let access;
+          try {
+            access = await probe();
+          } catch (error) {
+            status.textContent = probeFailure(error);
+            retry.hidden = false;
+            return;
+          }
+          form.hidden = access !== "submit-only";
+          owner.hidden = access !== "read-write";
+          if (access === "submit-only") {
+            send.disabled = editing();
+            status.textContent = editing()
+              ? "Form preview: answers cannot be sent while the tile is being edited."
+              : "Survey open. Only the survey owner can read your answer.";
+          } else if (access === "read-write") {
+            await loadOwnerView();
+          } else if (access === "read-only") {
+            status.textContent = "This survey is not open yet: the owner has not switched its database to “Viewers can only submit”.";
+          } else if (access === null) {
+            status.textContent = "This survey is closed: its database is off. Owner: enable Manage → Services → Database (SQLite).";
+          } else {
+            status.textContent = "This survey needs Tile's submit-only database mode, which this Tile release does not offer yet. No answers can be collected.";
+          }
+        }
+
+        function closeForm(message) {
+          form.hidden = true;
+          feedback.textContent = message;
+        }
+
+        function submitFailure(error) {
+          const keep = " Your draft is kept.";
+          switch (codeOf(error)) {
+            case "ALREADY_SUBMITTED":
+              closeForm("You have already answered this survey. Answers cannot be changed; contact the owner for a correction.");
+              return;
+            case "CONSTRAINT": feedback.textContent = "Please check your answer: " + error.error + keep; return;
+            case "SUBMIT_THROTTLED": feedback.textContent = "Too many attempts in the last hour. Try again later." + keep; return;
+            case "SUBMIT_TOO_LARGE": feedback.textContent = "Your answer is too long. Shorten the comment and send again." + keep; return;
+            case "SUBMIT_TABLE": feedback.textContent = "The survey is not accepting answers yet: the owner must tick the answers table under “Viewers can only submit”." + keep; return;
+            case "SUBMIT_UNIQUE": feedback.textContent = "The survey table cannot accept answers: a unique index lacks tile_submitted_by. Tell the survey owner." + keep; return;
+            case "SUBMIT_COLUMN": feedback.textContent = "This form does not match the survey table (column " + error.column + "). Tell the survey owner." + keep; return;
+            case "SUBMIT_INVALID": feedback.textContent = "This form sent a malformed answer. Tell the survey owner." + keep; return;
+            case "SUBMIT_ONLY": feedback.textContent = "The database refused this request. Reload the page." + keep; return;
+          }
+          const code = statusOf(error);
+          if (code === 404) feedback.textContent = "The survey is closed or its database is off. Reload to check." + keep;
+          else if (code === 413) feedback.textContent = "The survey's database is full. Tell the survey owner." + keep;
+          // UNIQUE (tile_submitted_by) makes a manual resend safe: a landed first
+          // attempt turns the resend into ALREADY_SUBMITTED.
+          else feedback.textContent = "Your answer may not have been saved (" + messageOf(error) + "). Send again: if it arrived, you will be told you already answered." + keep;
+        }
+
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          if (busy) return;
+          if (editing()) {
+            feedback.textContent = "Answers cannot be sent while the tile is being edited.";
+            return;
+          }
+          const score = Number($("score").value);
+          if (!Number.isInteger(score) || score < 1 || score > 5) {
+            feedback.textContent = "Choose a score from 1 to 5.";
+            return;
+          }
+          const values = {
+            score,
+            areas: JSON.stringify(AREAS.filter((area) => $("area-" + area).checked)),
+            comment: $("comment").value.trim() || null,
+          };
+          busy = true;
+          send.disabled = true;
+          feedback.textContent = "Sending your answer…";
+          try {
+            const access = await probe();
+            if (access !== "submit-only" || editing()) {
+              feedback.textContent = "This survey is not accepting answers from you right now. Your draft is kept; reload to check.";
+              return;
+            }
+            await tile.sqlite.submit(TABLE, values);
+            closeForm("Thanks, your answer is in. Only the survey owner can read it.");
+          } catch (error) {
+            submitFailure(error);
+          } finally {
+            busy = false;
+            send.disabled = editing();
+          }
+        });
+
+        async function hasTable() {
+          const { rows } = await tile.sqlite.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?", [TABLE]
+          );
+          return rows.length > 0;
+        }
+
+        function areaList(raw) {
+          try {
+            const areas = JSON.parse(raw);
+            return Array.isArray(areas) ? areas.join(", ") : String(raw);
+          } catch {
+            return String(raw ?? "");
+          }
+        }
+
+        function cell(text) {
+          const td = document.createElement("td");
+          td.textContent = text == null ? "" : String(text);
+          return td;
+        }
+
+        async function loadResponses() {
+          const [summary, distribution, list] = await tile.sqlite.batch([
+            "SELECT COUNT(*) AS n, ROUND(AVG(score), 1) AS average FROM answers",
+            "SELECT score, COUNT(*) AS n FROM answers GROUP BY score ORDER BY score",
+            "SELECT tile_submitted_by, tile_submitted_at, score, areas, comment FROM answers" +
+              " ORDER BY tile_submitted_at DESC, id DESC LIMIT 500",
+          ]);
+          const { n, average } = summary.rows[0];
+          const max = Math.max(1, ...distribution.rows.map((row) => row.n));
+          $("distribution").replaceChildren(...distribution.rows.map((row) => {
+            const item = document.createElement("li");
+            item.textContent = "Score " + row.score + ": " + row.n + " " + "█".repeat(Math.round((row.n / max) * 20));
+            return item;
+          }));
+          $("responses").replaceChildren(...list.rows.map((row) => {
+            const tr = document.createElement("tr");
+            tr.append(
+              cell(row.tile_submitted_by), cell(row.tile_submitted_at), cell(row.score),
+              cell(areaList(row.areas)), cell(row.comment),
+            );
+            return tr;
+          }));
+          loaded = list.rows;
+          stale = false;
+          $("summary").textContent = n + " responses, average score " + (average ?? "n/a") + ".";
+          exportButton.hidden = false;
+          status.textContent = n === 0 ? "Database ready — no responses yet." : "Database ready — responses loaded.";
+        }
+
+        function ownerFailure(error) {
+          const code = statusOf(error);
+          refresh.hidden = false;
+          stale = loaded !== null;
+          const kept = stale ? " The responses below are from the last successful load and may be stale." : "";
+          if (!stale) {
+            $("summary").textContent = "";
+            $("distribution").replaceChildren();
+            $("responses").replaceChildren();
+          }
+          if (codeOf(error) === "SUBMIT_ONLY") {
+            status.textContent = "Database unavailable: you can only submit to this survey now. Reload the page." + kept;
+          } else if (code === 404) {
+            status.textContent = "Database unavailable: confirm the tile is published and enable Manage → Services → Database (SQLite), then refresh." + kept;
+          } else {
+            status.textContent = "Database unavailable (" + messageOf(error) + "). Choose Refresh responses to try again." + kept;
+          }
+        }
+
+        async function loadOwnerView() {
+          status.textContent = "Checking database…";
+          try {
+            const exists = await hasTable();
+            initialize.hidden = exists || editing();
+            refresh.hidden = !exists;
+            if (!exists) {
+              exportButton.hidden = true;
+              status.textContent = editing()
+                ? "Database ready — the survey table does not exist yet. Leave edit mode to create it."
+                : "Database ready — the survey table does not exist yet. Choose Create survey table, then finish the owner setup below.";
+              return;
+            }
+            await loadResponses();
+          } catch (error) {
+            ownerFailure(error);
+          }
+        }
+
+        initialize.addEventListener("click", async () => {
+          if (busy || editing()) return;
+          busy = true;
+          initialize.disabled = true;
+          feedback.textContent = "Creating the survey table…";
+          try {
+            if ((await probe()) !== "read-write" || editing()) {
+              feedback.textContent = "Only tile admins and database editors can create the survey table.";
+              return;
+            }
+            if (!(await hasTable())) await tile.sqlite.execute(SCHEMA);
+            feedback.textContent = "Survey table ready. Next: Manage → Services → Database (SQLite) → Write access → “Viewers can only submit”, tick answers, Save write access.";
+            await loadOwnerView();
+          } catch (error) {
+            feedback.textContent = "Could not create the survey table (" + messageOf(error) + ").";
+          } finally {
+            busy = false;
+            initialize.disabled = false;
+          }
+        });
+
+        refresh.addEventListener("click", async () => {
+          if (busy) return;
+          busy = true;
+          try {
+            await loadOwnerView();
+          } finally {
+            busy = false;
+          }
+        });
+
+        function csvCell(value) {
+          let text = value == null ? "" : String(value);
+          if (/^\s*[=+\-@]/.test(text) || /^[\t\r]/.test(text)) text = "'" + text;
+          return '"' + text.replace(/"/g, '""') + '"';
+        }
+
+        exportButton.addEventListener("click", () => {
+          if (!loaded) return;
+          const lines = [["submitted_by", "submitted_at", "score", "went_well", "comment"]].concat(
+            loaded.map((row) => [row.tile_submitted_by, row.tile_submitted_at, row.score, areaList(row.areas), row.comment])
+          ).map((cells) => cells.map(csvCell).join(","));
+          const url = URL.createObjectURL(new Blob([lines.join("\r\n")], { type: "text/csv" }));
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = "survey-responses.csv";
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(url), 0);
+          feedback.textContent = "Exported " + loaded.length + " responses" + (stale ? " from the last successful load (may be stale)." : ".");
+        });
+
+        const fail = (error) => {
+          status.textContent = "Survey unavailable (" + messageOf(error) + "). Reload the page.";
+        };
+        retry.addEventListener("click", () => {
+          if (!busy) start().catch(fail);
+        });
+
+        await start().catch(fail);
+      })();
+    </script>
+  </body>
+</html>

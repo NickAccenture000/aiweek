@@ -1,0 +1,7 @@
+{
+  "agent": "claude-code",
+  "description": "Build HTML for Tile and operate the tiles it serves, using the supported SDK and platform capabilities",
+  "name": "tile-skill",
+  "type": "skill",
+  "version": "0.6.10"
+}

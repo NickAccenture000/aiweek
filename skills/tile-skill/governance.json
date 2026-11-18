@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 2,
+  "owner": {
+    "name": "Artifact Owner",
+    "email": "artifact.owner@accenture.com"
+  },
+  "purpose": "Tile skill for building with the SDK and platform features",
+  "dataClassification": "L0",
+  "provenance": {
+    "origin": "canvas-native",
+    "sourceUrl": null,
+    "sourceRevision": null,
+    "license": {
+      "id": "LicenseRef-Accenture-Proprietary",
+      "file": null
+    }
+  },
+  "controls": {
+    "allowedDataLevels": [
+      "L0"
+    ],
+    "externalNetwork": false,
+    "executesCode": false
+  },
+  "review": {
+    "requiredRoles": []
+  }
+}

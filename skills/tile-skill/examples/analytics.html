@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Programme update</title>
+    <script src="/vendor/tile.js"></script>
+  </head>
+  <body>
+    <nav aria-label="Page sections">
+      <!-- Intentionally unmeasured: in-tile navigation. -->
+      <a href="#programme">Programme</a>
+    </nav>
+
+    <main>
+      <section data-tile-section="overview">
+        <h1>Programme update</h1>
+        <button
+          type="button"
+          data-tile-cta="contact-programme"
+          data-tile-goal="activation"
+        >Contact the programme</button>
+
+        <tile-cta label="register-workshop" goal="activation">
+          <button type="button" id="register">Register</button>
+        </tile-cta>
+
+        <tile-cta label="play-demo" goal="engagement">
+          <button type="button" id="play">Play demo</button>
+        </tile-cta>
+
+        <button type="button" id="finish-demo">Mark demo finished</button>
+      </section>
+
+      <div id="programme"></div>
+    </main>
+
+    <script>
+      const analytics = tile.analytics.start();
+
+      document.querySelector("#play").addEventListener("click", () => {
+        // Existing demo behavior remains here; the wrapper measures the click.
+      });
+
+      document.querySelector("#finish-demo").addEventListener("click", () => {
+        tile.analytics.track("demo-completed", { goal: "engagement" });
+      });
+
+      const section = document.createElement("section");
+      section.dataset.tileSection = "case-studies";
+      section.innerHTML = "<h2>Case studies</h2><p>Programme examples.</p>";
+      document.querySelector("#programme").append(section);
+      analytics.refreshSections();
+
+      // Development check before publishing:
+      // tile.analytics.audit();
+    </script>
+  </body>
+</html>
