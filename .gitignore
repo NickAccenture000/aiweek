@@ -1,0 +1,11 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+.vscode/
+.idea/
+
+# Claude Code: local worktrees and personal settings
+.claude/worktrees/
+.claude/settings.local.json

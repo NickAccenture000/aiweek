@@ -3,8 +3,10 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
   var LISTS = ["affected", "degraded", "working"];
   var STATUS = { affected: "unavailable", degraded: "degraded", working: "operational" };
 
+  var TOKEN_RE = /\{\{\s*(\w+)(?::(\w+))?\s*\}\}/g;
+
   function extractTokens(template) {
-    var re = /\{\{\s*(\w+)(?::(\w+))?\s*\}\}/g, out = [], m;
+    var re = new RegExp(TOKEN_RE.source, "g"), out = [], m;
     while ((m = re.exec(template))) {
       out.push({ raw: m[0], type: m[1], key: m[2] || null, index: m.index, id: m[2] ? m[1] + ":" + m[2] : m[1] });
     }
@@ -44,6 +46,7 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
 
   SkyNet.lib.render = render;
   SkyNet.lib.extractTokens = extractTokens;
+  SkyNet.lib.TOKEN_RE = TOKEN_RE;
   SkyNet.lib.listOf = listOf;
   SkyNet.lib.LISTS = LISTS;
   SkyNet.lib.STATUS = STATUS;

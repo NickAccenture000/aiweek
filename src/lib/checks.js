@@ -19,13 +19,22 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
     return terms.sort(function (a, b) { return b.text.length - a.text.length; });
   }
 
-  // Finds system/status terms in text outside tokens. Returns offending spans and a fixed template.
+  // The term list and regex only depend on the glossary, so build them once per glossary object.
+  var matcherCache = { glossary: null };
+  function matcherFor(glossary) {
+    if (matcherCache.glossary !== glossary) {
+      var terms = buildTerms(glossary), byText = {};
+      terms.forEach(function (t) { if (!byText[t.text.toLowerCase()]) byText[t.text.toLowerCase()] = t; });
+      var alt = terms.map(function (t) { return escapeRe(t.text); }).join("|");
+      matcherCache = { glossary: glossary, byText: byText,
+        re: new RegExp("(?<![\\p{L}\\p{N}])(?:" + alt + ")(?![\\p{L}\\p{N}])", "giu") };
+    }
+    return matcherCache;
+  }
+
+  // Finds system/status terms in text outside tokens. Returns offending spans (in text order) and a fixed template.
   function findFreeFacts(template, glossary) {
-    var terms = buildTerms(glossary);
-    var byText = {};
-    terms.forEach(function (t) { if (!byText[t.text.toLowerCase()]) byText[t.text.toLowerCase()] = t; });
-    var alt = terms.map(function (t) { return escapeRe(t.text); }).join("|");
-    var re = new RegExp("(?<![\\p{L}\\p{N}])(?:" + alt + ")(?![\\p{L}\\p{N}])", "giu");
+    var mc = matcherFor(glossary), re = mc.re, byText = mc.byText;
     var offenders = [], fixable = false;
     var lines = template.split("\n").map(function (line) {
       var masked = line.replace(/\{\{[^}]*\}\}/g, function (m) { return "\u0001".repeat(m.length); });
@@ -40,13 +49,12 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
           while (j < matches.length && matches[j].term.kind !== "status") j++;
           var end = j < matches.length ? matches[j].end : a.end;
           spans.push({ start: a.start, end: end, key: a.term.key.slice(4) });
+          offenders.push(line.slice(a.start, end));
           if (j < matches.length) i = j;
         } else {
           offenders.push(line.slice(a.start, a.end));
         }
       }
-      var found = spans.map(function (s) { return line.slice(s.start, s.end); });
-      offenders = offenders.concat(found);
       spans.slice().reverse().forEach(function (s) {
         fixable = true;
         line = line.slice(0, s.start) + "{{fact:" + s.key + "}}" + line.slice(s.end);
@@ -87,6 +95,12 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
         else if (record.resolved) bad.push("time token " + t.raw + " not allowed in a resolved message");
       } else if (t.type !== "id" && t.type !== "label") bad.push("unknown token " + t.raw);
     });
+    // Anything brace-like that the token parser did not accept would be sent verbatim.
+    var leftover = draft.template.replace(L.TOKEN_RE, "");
+    if (/\{\{|\}\}/.test(leftover)) {
+      var junk = leftover.match(/\{\{[^\n]*?(\}\}|$)|[^\s{]*\}\}/m);
+      bad.push("malformed token " + (junk ? "\"" + junk[0].trim() + "\"" : "") + " (use {{type:key}})");
+    }
     results.push({ id: "values_exact", pass: bad.length === 0, message: bad.length ? bad.join("; ") : "All values come from the record" });
 
     // no_free_facts

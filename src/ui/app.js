@@ -4,6 +4,8 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
   var D = SkyNet.data, L = SkyNet.lib, G = D.glossary, V = SkyNet.ui.views;
   var pad = function (n) { return String(n).padStart(2, "0"); };
   var fmtTime = function (d) { return pad(d.getHours()) + ":" + pad(d.getMinutes()); };
+  // The one inbox entry driven by records.js; the others are static placeholders.
+  var LIVE_ID = D.inbox.filter(function (e) { return e.live; })[0].id;
 
   SkyNet.createApp = function (root, opts) {
     opts = opts || {};
@@ -12,7 +14,7 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
 
     var st = {
       versionIdx: 0, record: D.records[0],
-      view: "incidents", selected: "INC00123", unread: true, step: "incident",
+      view: "incidents", selected: LIVE_ID, unread: true, step: "incident",
       opLang: "EN",
       contacts: D.contacts.map(function (c) { return { id: c.id, name: c.name, role: c.role, lang: c.lang, active: c.active }; }),
       editingContact: null, shForm: null, shError: "",
@@ -38,6 +40,10 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
       return { recipients: recipients, keys: L.getDraftKeys(recipients, reviewLangFor) };
     }
 
+    function approvalSig(role, keys) {
+      return keys.filter(function (k) { return k.role === role; }).map(function (k) { return k.key; }).join(",");
+    }
+
     function derive() {
       var record = st.record, rk = currentKeys(), recipients = rk.recipients, keys = rk.keys;
       var reviewKey = {};
@@ -56,10 +62,12 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
           failing: failing, overridden: !!(d && d.override), needs: failing.length > 0 && !(d && d.override) };
       });
       var roles = L.ROLE_ORDER.filter(function (r) { return keys.some(function (k) { return k.role === r; }); }).map(function (role) {
-        return { role: role, keys: keys.filter(function (k) { return k.role === role; }).map(function (k) { return items[k.key]; }) };
+        // An approval only covers the languages that existed when it was given.
+        return { role: role, keys: keys.filter(function (k) { return k.role === role; }).map(function (k) { return items[k.key]; }),
+          approved: st.approved[role] === approvalSig(role, keys) };
       });
       var needs = keys.filter(function (k) { return items[k.key].needs; }).map(function (k) { return items[k.key]; });
-      var firstUnapproved = roles.filter(function (r) { return !st.approved[r.role]; })[0];
+      var firstUnapproved = roles.filter(function (r) { return !r.approved; })[0];
       var outdated = st.outdated || keys.some(function (k) { var d = items[k.key].draft; return d && d.recordVersion !== record.version; });
       var sentThis = st.sentVersion === record.version;
       var nuOk = record.resolved || /^\d{2}:\d{2}$/.test(st.nextUpdate);
@@ -86,7 +94,7 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
       "<div id=\"r-dialog\"></div></div>";
 
     var helpers = { renderDraft: renderDraft };
-    function liveSelected() { return st.selected === "INC00123"; }
+    function liveSelected() { return st.selected === LIVE_ID; }
     function bodyHtml(v) {
       if (st.view === "stakeholders") return V.stakeholders(st);
       if (!liveSelected()) return V.placeholder(D.inbox.filter(function (e) { return e.id === st.selected; })[0]);
@@ -160,7 +168,7 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
       var v = derive();
       if (!v.needs.length) return;
       var it = v.needs[0];
-      st.view = "incidents"; st.selected = "INC00123"; st.step = "messages";
+      st.view = "incidents"; st.selected = LIVE_ID; st.step = "messages";
       st.expandedRoles[it.role] = true; st.expandedOnce[it.role] = true;
       if (!it.review) st.expandedLang[it.key] = true;
       render();
@@ -237,7 +245,7 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
     var actions = {
       nav: function (el) { st.view = el.dataset.view; st.editingContact = null; st.shForm = null; st.shError = ""; },
       "set-lang": function (el) { st.opLang = el.dataset.lang; refreshDrafts(); },
-      select: function (el) { st.view = "incidents"; st.selected = el.dataset.id; if (st.selected === "INC00123") st.unread = false; },
+      select: function (el) { st.view = "incidents"; st.selected = el.dataset.id; if (st.selected === LIVE_ID) st.unread = false; },
       inform: function () { st.unread = false; st.step = "recipients"; },
       "back-incident": function () { st.step = "incident"; },
       generate: function () { st.step = "messages"; regenerate(); },
@@ -247,7 +255,10 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
         if (st.expandedRoles[role]) st.expandedOnce[role] = true;
       },
       "toggle-lang": function (el) { st.expandedLang[el.dataset.key] = !st.expandedLang[el.dataset.key]; },
-      approve: function (el) { if (st.expandedOnce[el.dataset.role]) st.approved[el.dataset.role] = true; },
+      approve: function (el) {
+        var role = el.dataset.role;
+        if (st.expandedOnce[role]) st.approved[role] = approvalSig(role, currentKeys().keys);
+      },
       fix: function (el) {
         var it = derive().items[el.dataset.key];
         var fix = it && it.failing.filter(function (c) { return c.fix; })[0];
@@ -329,13 +340,47 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
     };
     var selfRendering = { "next-issue": 1, "next-unapproved": 1, regenerate: 1, simulate: 1, send: 1, generate: 1 };
 
+    // ---------- focus ----------
+    // Every render replaces the DOM, so focus is restored to the equivalent element afterwards.
+    var FOCUS_ATTRS = ["action", "role", "key", "id", "lang", "view", "idx", "h", "m"];
+    function selectorFor(el) {
+      if (!el || !root.contains(el) || !el.dataset || !el.dataset.action) return null;
+      return FOCUS_ATTRS.filter(function (a) { return el.dataset[a] != null; })
+        .map(function (a) { return "[data-" + a + "=" + JSON.stringify(el.dataset[a]) + "]"; }).join("");
+    }
+    function focusFirst(selectors) {
+      for (var i = 0; i < selectors.length; i++) {
+        var el = selectors[i] && $(selectors[i]);
+        if (el && !el.disabled) { el.focus({ preventScroll: true }); return; }
+      }
+    }
+    function closeDialog() {
+      var d = st.dialog;
+      st.dialog = null;
+      render();
+      if (d) focusFirst([d.returnTo, "[data-action=\"edit\"][data-key=" + JSON.stringify(d.key) + "]"]);
+    }
+
     function onClick(e) {
       var el = e.target.closest ? e.target.closest("[data-action]") : null;
       if (!el || !root.contains(el) || el.disabled) return;
       var name = el.dataset.action, fn = actions[name];
       if (!fn) return;
+      var hadDialog = !!st.dialog, focusSel = document.activeElement === el ? selectorFor(el) : null;
       fn(el);
-      if (!selfRendering[name]) render();
+      if (selfRendering[name]) return;
+      if (hadDialog && !st.dialog) { closeDialog(); return; }
+      render();
+      if (st.dialog && !hadDialog) { st.dialog.returnTo = focusSel; focusFirst(["[data-reason]"]); }
+      else if (st.dialog && st.dialog.error) focusFirst(["[data-reason]"]);
+      else if (st.editing && name === "edit") focusFirst(["[data-edit-area]"]);
+      else if (focusSel && name === "approve") {
+        // The Approve button is now disabled: move on to the next role to approve, else the primary button.
+        var next = derive().firstUnapproved;
+        focusFirst([next ? "[data-action=\"toggle-card\"][data-role=\"" + next.role + "\"]" : null, "#r-primary button"]);
+      } else if (focusSel) {
+        focusFirst([focusSel, el.dataset.role ? "[data-action=\"toggle-card\"][data-role=" + JSON.stringify(el.dataset.role) + "]" : null]);
+      }
     }
     function onInput(e) {
       if (!e.target.matches || !e.target.matches("[data-nu]")) return;
@@ -343,10 +388,24 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
       renderBody(derive()); // keep the time input itself untouched while typing
     }
     function onKey(e) {
+      if (st.dialog) {
+        if (e.key === "Escape") { e.preventDefault(); closeDialog(); return; }
+        if (e.key === "Tab") trapTab(e);
+        return; // no shortcuts while the dialog is open
+      }
       if (e.ctrlKey || e.metaKey || e.altKey || (e.key !== "n" && e.key !== "N")) return;
       var t = e.target, tag = t && t.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (t && t.isContentEditable)) return;
       if (st.step === "messages" && st.view === "incidents" && liveSelected()) nextIssue();
+    }
+    function trapTab(e) {
+      var modal = $(".modal");
+      if (!modal) return;
+      var items = modal.querySelectorAll("button:not([disabled]), textarea, input, select");
+      if (!items.length) return;
+      var first = items[0], last = items[items.length - 1], inside = modal.contains(document.activeElement);
+      if (e.shiftKey && (document.activeElement === first || !inside)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && (document.activeElement === last || !inside)) { e.preventDefault(); first.focus(); }
     }
     root.addEventListener("click", onClick);
     root.addEventListener("input", onInput);

@@ -26,6 +26,14 @@ describe("checks", function () {
     var d = find(1, "ATCO_SUPERVISOR", "EN");
     expect(failed(run(clone(d, d.template + "\n{{fact:radar_x}}")))).toContain("values_exact");
   });
+  it("malformed tokens fail values_exact instead of being sent verbatim", function () {
+    var d = find(1, "ATCO_SUPERVISOR", "EN");
+    ["{{fact:primary-radar}}", "{{time:}}", "{{fact:voice_comm}", "{{label", "label}}"].forEach(function (junk) {
+      var res = run(clone(d, d.template + "\n" + junk));
+      expect(failed(res)).toContain("values_exact");
+      expect(res[0].message).toContain("malformed token");
+    });
+  });
   it("removing a token from a DE draft fails language_parity", function () {
     var d = find(2, "ATCO_SUPERVISOR", "DE");
     expect(failed(run(clone(d, d.template.replace("{{fact:datalink}}\n", ""))))).toContain("language_parity");

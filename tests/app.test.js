@@ -108,6 +108,20 @@ describe("App", function () {
     t.destroy();
   });
 
+  it("adding a recipient language after approval withdraws that role's approval", function () {
+    var t = mount();
+    t.act("toggle-recipients");
+    t.root.querySelector("input[data-id=\"c2\"]").click(); // remove Claire (ATCO FR)
+    t.expand("ATCO_SUPERVISOR");
+    t.approve("ATCO_SUPERVISOR");
+    expect(t.btn("Approved", t.card("ATCO_SUPERVISOR"))).toBeTruthy();
+    t.root.querySelector("input[data-id=\"c2\"]").click(); // add her back: a new, unreviewed FR draft
+    expect(t.app.derive().keys.map(function (k) { return k.key; })).toContain("ATCO_SUPERVISOR:FR");
+    expect(t.btn("Approved", t.card("ATCO_SUPERVISOR"))).toBe(null);
+    expect(t.app.derive().firstUnapproved.role).toBe("ATCO_SUPERVISOR");
+    t.destroy();
+  });
+
   it("v1 generates 6 drafts, all ready, for 5 recipients", function () {
     var t = mount();
     var v = t.app.derive();
@@ -153,6 +167,34 @@ describe("App", function () {
     var overrides = t.app.state.history[1].overrides;
     expect(overrides).toHaveLength(1);
     expect(overrides[0].reason).toBe("Verified manually with ENG lead");
+    t.destroy();
+  });
+
+  it("override dialog: focus goes to the reason, Escape closes it, N is ignored while open", function () {
+    var t = mount();
+    sendV1(t);
+    t.click("Simulate record update");
+    t.round();
+    t.click("Next issue");
+    var opener = t.btn("Override…");
+    opener.focus();
+    opener.click();
+    expect(document.activeElement).toBe(t.root.querySelector("[data-reason]"));
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "N" }));
+    expect(t.root.querySelector("[role=dialog]")).toBeTruthy();
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    expect(t.root.querySelector("[role=dialog]")).toBe(null);
+    expect(document.activeElement).toBe(t.btn("Override…"));
+    t.destroy();
+  });
+
+  it("focus stays on the clicked control after the re-render", function () {
+    var t = mount();
+    var toggle = t.root.querySelector("[data-action=\"toggle-card\"][data-role=\"ENGINEERING\"]");
+    toggle.focus();
+    toggle.click();
+    expect(document.activeElement.getAttribute("data-role")).toBe("ENGINEERING");
+    expect(document.activeElement.getAttribute("data-action")).toBe("toggle-card");
     t.destroy();
   });
 
