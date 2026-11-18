@@ -18,7 +18,7 @@ button { font-family: inherit; }
 @media (max-width: 860px) { .app { grid-template-columns: 1fr; } .inbox { position: static; height: auto; } .main { padding: 20px 16px 110px; } }
 
 /* inbox */
-.inbox-head { display: flex; align-items: center; gap: 8px; padding: 0 8px; }
+.inbox-head { margin-bottom: 14px; display: flex; align-items: center; gap: 8px; padding: 0 8px; }
 .inbox-head h2 { margin: 0; font-size: 22px; }
 .inbox-sub { margin: 2px 8px 14px; color: var(--muted); font-size: 14px; }
 .inbox-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }

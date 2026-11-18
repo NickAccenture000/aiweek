@@ -45,7 +45,7 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
 
   views.inbox = function (st) {
     return "<div class=\"inbox-head\"><h2>Inbox</h2><span class=\"count\">" + D.inbox.length + "</span></div>" +
-      "<p class=\"inbox-sub\">Incoming incidents</p><ul class=\"inbox-list\">" + D.inbox.map(function (e) { return inboxItem(st, e); }).join("") + "</ul>";
+      "<ul class=\"inbox-list\">" + D.inbox.map(function (e) { return inboxItem(st, e); }).join("") + "</ul>";
   };
 
   // ---------- incident header + stepper ----------
@@ -111,7 +111,7 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
       var k = v.label.kind;
       var text = k === "initial" ? "Inform stakeholders" : (k === "resolved" ? "Send resolution notice" : "Send update to stakeholders");
       html += "<div class=\"cta\"><button class=\"btn primary big\" data-action=\"inform\">" + text + "</button>" +
-        "<span class=\"muted\">Next: review who will be contacted.</span></div>";
+        "</div>";
     }
     return html + historyHtml(st);
   };
@@ -122,8 +122,7 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
     var langs = [];
     v.recipients.forEach(function (c) { if (langs.indexOf(c.lang) < 0) langs.push(c.lang); });
     langs.sort();
-    var html = "<h2>Who will be informed</h2><p class=\"lead\">Suggested from the role rules for a " + (r.major ? "<strong>major</strong>" : "<strong>non-major</strong>") +
-      " incident. Tick or untick people to change who is contacted.</p>";
+    var html = "<h2>Who will be informed</h2>";
     L.ROLE_ORDER.forEach(function (role) {
       var rule = D.roleRules[role], notified = rule.notified === "always" || r.major;
       var reason = rule.notified === "always" ? "Always notified" : (r.major ? "Notified because this is a major incident" : "Not notified for non-major incidents");
@@ -141,7 +140,7 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
       }).join("") + "</ul></section>";
     });
     html += "<div class=\"summary-bar\"><span><strong>" + (v.recipients.length === 1 ? "1 person" : v.recipients.length + " people") + "</strong> will be contacted" +
-      (langs.length ? " in " + langs.join(", ") : "") + ". You also get an English review copy per role.</span>" +
+      (langs.length ? " in " + langs.join(", ") : "") + ".</span>" +
       "<span class=\"actions\"><button class=\"btn ghost\" data-action=\"back-incident\">← Back</button>" +
       "<button class=\"btn primary\" data-action=\"generate\"" + (v.recipients.length ? "" : " disabled") + ">Generate messages</button></span></div>";
     return html;
@@ -278,7 +277,7 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
 
   views.placeholder = function (e) {
     return "<div class=\"inc-title\"><span class=\"inc-id\">" + e.id + "</span><h1>" + esc(e.title) + "</h1></div>" +
-      "<div class=\"banner banner-info\">" + esc(e.note) + "</div><p class=\"muted\">Placeholder entry for the demo. Select INC00123 to try the stakeholder flow.</p>";
+      "<div class=\"banner banner-info\">" + esc(e.note) + "</div>";
   };
 
   views.demo = function (st) {
