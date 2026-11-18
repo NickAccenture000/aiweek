@@ -286,13 +286,15 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
     return html + "</div>";
   }
 
-  function langRow(st, it, h) {
+  // One column per language, shown side by side so wording and facts can be compared at a glance.
+  function langCol(st, it, h) {
     var n = it.failing.length;
     var status = it.needs ? "<span class=\"bad\">" + ic("x-circle") + plural(n, "issue") + "</span>"
-      : (n ? "<span class=\"warn\">" + ic("alert") + "overridden</span>" : "<span class=\"ok\">" + ic("check-circle") + "same facts</span>");
-    var open = !!st.expandedLang[it.key];
-    return "<div class=\"lang-block\"><button class=\"lang-row\" data-action=\"toggle-lang\" data-key=\"" + attr(it.key) + "\" aria-expanded=\"" + open + "\">" +
-      ic(open ? "chevron-down" : "chevron-right") + "<strong>" + it.lang + "</strong> " + status + "</button>" + (open ? draftBody(st, it, h) : "") + "</div>";
+      : (n ? "<span class=\"warn\">" + ic("alert") + "overridden</span>"
+        : "<span class=\"ok\">" + ic("check-circle") + (it.review ? "checks passed" : "same facts") + "</span>");
+    var title = it.lang + (it.review ? (it.reviewOnly ? " · review only" : " · review") : "");
+    return "<section class=\"lang-col" + (it.review ? " is-review" : "") + (it.needs ? " has-issue" : "") + "\" data-lang=\"" + it.lang + "\">" +
+      "<header class=\"lang-head\"><strong>" + title + "</strong>" + status + "</header>" + draftBody(st, it, h) + "</section>";
   }
 
   function card(st, r, h) {
@@ -307,11 +309,8 @@ window.SkyNet = window.SkyNet || { data: {}, lib: {}, ui: {} };
       "<button class=\"btn approve" + (approved ? " done" : "") + "\" data-action=\"approve\" data-role=\"" + r.role + "\"" + (st.expandedOnce[r.role] && !approved ? "" : " disabled") + ">" +
       (approved ? ic("check") + "Approved" : "Approve") + "</button></div>";
     if (open) {
-      var rev = r.keys.filter(function (i) { return i.review; })[0];
-      html += "<div class=\"card-body\"><div class=\"review-block\"><h4>" + rev.lang + (rev.reviewOnly ? " · review only" : " · review") + "</h4>" +
-        (rev.needs ? "" : "<p class=\"ok small\">" + ic("check-circle") + "checks passed</p>") + draftBody(st, rev, h) + "</div>";
-      r.keys.filter(function (i) { return !i.review; }).forEach(function (i) { html += langRow(st, i, h); });
-      html += "</div>";
+      var ordered = r.keys.filter(function (i) { return i.review; }).concat(r.keys.filter(function (i) { return !i.review; }));
+      html += "<div class=\"card-body\"><div class=\"lang-grid\" style=\"--cols:" + ordered.length + "\">" + ordered.map(function (i) { return langCol(st, i, h); }).join("") + "</div></div>";
     }
     return html + "</article>";
   }
