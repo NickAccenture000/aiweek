@@ -218,6 +218,56 @@ details.more[open] summary::after { content: " ⌄"; }
 .dlg details table { margin-top: 8px; }
 .tip { position: fixed; z-index: 30; pointer-events: none; background: rgba(29,29,31,.92); color: #fff; font-size: 12px; padding: 8px 10px; border-radius: 10px; max-width: 320px; white-space: pre-line; }
 
+/* ---------- stakeholder directory ---------- */
+.nav .seg { margin-top: 0; }
+.nav .seg button { padding: 5px 14px; }
+.nav .msg-only[hidden] { display: none; }
+.dirhead { padding: 44px 0 20px; }
+.dirhead h1 { font: 600 clamp(28px, 4vw, 40px)/1.1 var(--display); letter-spacing: -.025em; margin-top: 8px; }
+.dirhead .kicker { font-size: 13px; color: var(--ink-2); font-family: var(--mono); letter-spacing: 0; }
+.dirbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 16px; }
+.dirbar .seg { margin-top: 0; }
+.dirbar .grow { flex: 1 1 220px; }
+.search { width: 100%; border: 1px solid var(--line-2); border-radius: 980px; padding: 8px 16px; background: #fff; font-size: 14px; }
+.dircount { font-size: 13px; color: var(--ink-2); }
+.dir { overflow: hidden; margin-bottom: 16px; }
+.dir table { font-size: 14px; }
+.dir th { font-size: 12px; padding: 12px 16px; background: var(--well); border-bottom: 1px solid var(--line); white-space: nowrap; }
+.dir td { padding: 14px 16px; vertical-align: middle; }
+.dir tbody tr { transition: background-color .15s; }
+.dir tbody tr:hover { background: #fafafc; }
+.dir tbody tr:last-child td { border-bottom: 0; }
+.dir .who { font-weight: 600; }
+.dir .contact { font: 13px/1.5 var(--mono); letter-spacing: 0; color: var(--ink-2); overflow-wrap: anywhere; }
+.dir .act { text-align: right; width: 1%; white-space: nowrap; }
+.pill { display: inline-block; font: 600 11px/1 var(--sans); letter-spacing: .03em; padding: 5px 9px; border-radius: 980px; background: #ececf0; color: var(--ink-2); }
+.dir .empty { padding: 36px 24px; text-align: center; color: var(--ink-2); }
+.savestate { font-size: 13px; color: var(--ink-2); margin-bottom: 48px; }
+.savestate.bad { color: var(--red); }
+.savestate.ok { color: var(--green); }
+@media (max-width: 720px) {
+  .dir thead { display: none; }
+  .dir table, .dir tbody, .dir tr, .dir td { display: block; }
+  .dir tr { position: relative; padding: 14px 76px 14px 16px; border-bottom: 1px solid var(--line); }
+  .dir tbody tr:last-child { border-bottom: 0; }
+  .dir td { padding: 1px 0; border: 0; }
+  .dir td.act { position: absolute; top: 10px; right: 8px; width: auto; }
+}
+.field { display: grid; gap: 4px; }
+.field label { font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.field input, .field select { border: 1px solid var(--line-2); border-radius: 10px; padding: 9px 12px; background: #fff; font-size: 15px; width: 100%; }
+.field input:focus-visible, .field select:focus-visible, .search:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+.field .hint { font-size: 12px; color: var(--ink-3); }
+.form { padding: 20px 24px 24px; display: grid; gap: 16px; }
+.form .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 560px) { .form .two { grid-template-columns: minmax(0, 1fr); } }
+.form .err { color: var(--red); font-size: 13px; min-height: 1.4em; }
+.form .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.form .actions .spacer { margin-right: auto; }
+.btn.danger { background: #ffe5e7; color: var(--red); }
+.btn.danger:hover:not(:disabled) { background: #ffd6da; }
+.btn.danger.sure { background: var(--red); color: #fff; }
+
 /* ---------- log ---------- */
 .log { margin: 8px 0 48px; }
 .log > summary { cursor: pointer; font-size: 13px; color: var(--ink-2); list-style: none; padding: 12px 0; }
@@ -244,13 +294,17 @@ footer { padding: 0 0 40px; font-size: 12px; color: var(--ink-3); }
 <nav class="nav" aria-label="Tool">
   <div class="wrap">
     <span class="name">SMC Messages</span>
-    <label><span class="visually-hidden" hidden>Incident</span><select id="scenario" aria-label="Incident"></select></label>
-    <label class="toggle"><input type="checkbox" id="sources"> Show sources</label>
-    <span id="svc" class="svc" data-state="checking" role="status" aria-live="polite">Checking AI</span>
+    <div class="seg" role="tablist" aria-label="Page" id="pages">
+      <button type="button" role="tab" id="tab-messages" aria-selected="true" data-page="messages">Messages</button>
+      <button type="button" role="tab" id="tab-stake" aria-selected="false" data-page="stake">Stakeholders</button>
+    </div>
+    <label class="msg-only"><span class="visually-hidden" hidden>Incident</span><select id="scenario" aria-label="Incident"></select></label>
+    <label class="toggle msg-only"><input type="checkbox" id="sources"> Show sources</label>
+    <span id="svc" class="svc msg-only" data-state="checking" role="status" aria-live="polite">Checking AI</span>
   </div>
 </nav>
 
-<main class="wrap">
+<main class="wrap" id="view-messages">
   <section class="hero" id="hero" aria-live="polite"></section>
   <div class="layout">
     <aside class="card record" id="record" aria-label="Incident record"></aside>
@@ -261,6 +315,46 @@ footer { padding: 0 0 40px; font-size: 12px; color: var(--ink-3); }
     <div class="card" id="logbody"></div>
   </details>
 </main>
+
+<main class="wrap" id="view-stake" hidden>
+  <section class="dirhead">
+    <p class="kicker">Directory</p>
+    <h1>Stakeholders</h1>
+  </section>
+  <div class="dirbar">
+    <div class="grow"><input class="search" id="dirsearch" type="search" placeholder="Search name, function or contact" aria-label="Search stakeholders"></div>
+    <div class="seg" role="tablist" aria-label="Group" id="dirgroup"></div>
+    <button class="btn blue" type="button" id="diradd">Add stakeholder</button>
+  </div>
+  <p class="dircount" id="dircount" role="status" aria-live="polite"></p>
+  <section class="card dir" id="dirtable" aria-label="Stakeholders"></section>
+  <p class="savestate" id="dirsave" role="status" aria-live="polite"></p>
+</main>
+
+<dialog id="stdlg" class="dlg" aria-labelledby="sttitle" style="width:min(560px, calc(100vw - 32px))">
+  <div class="dlg-head">
+    <h2 id="sttitle">Add stakeholder</h2>
+    <button class="btn" type="button" id="stclose">Close</button>
+  </div>
+  <form class="form" id="stform" novalidate>
+    <div class="field"><label for="sf-name">Name</label><input id="sf-name" autocomplete="off" maxlength="60" required></div>
+    <div class="field"><label for="sf-role">Function</label><input id="sf-role" autocomplete="off" maxlength="80" required></div>
+    <div class="two">
+      <div class="field"><label for="sf-aud">Group</label><select id="sf-aud"></select></div>
+      <div class="field"><label for="sf-lang">Language</label><select id="sf-lang"></select></div>
+    </div>
+    <div class="two">
+      <div class="field"><label for="sf-email">Email</label><input id="sf-email" type="email" autocomplete="off" maxlength="80"></div>
+      <div class="field"><label for="sf-phone">Phone</label><input id="sf-phone" type="tel" autocomplete="off" maxlength="30"></div>
+    </div>
+    <p class="err" id="sterr" role="alert"></p>
+    <div class="actions">
+      <button class="btn danger spacer" type="button" id="stremove" hidden>Remove</button>
+      <button class="btn" type="button" id="stcancel">Cancel</button>
+      <button class="btn blue" type="submit" id="stsave">Save</button>
+    </div>
+  </form>
+</dialog>
 <dialog id="simdlg" class="dlg" aria-labelledby="simtitle">
   <div class="dlg-head">
     <h2 id="simtitle">Translation similarity</h2>
@@ -302,20 +396,23 @@ const AUD = {
     brief: "Management, informed for major incidents only. They need a short business-level summary: what is down, impact on operations and traffic, expected restoration. At most two bullets per section, no technical jargon." }
 };
 
-/* Fictional people. No contact details: sending is simulated. */
-const DIRECTORY = [
-  { id: "p01", aud: "atco", name: "M. Keller",  role: "Supervisor, ACC Zurich",      lang: "de" },
-  { id: "p02", aud: "atco", name: "C. Dubois",  role: "Supervisor, ACC Geneva",      lang: "fr" },
-  { id: "p03", aud: "atco", name: "A. Brunner", role: "Supervisor, Tower Zurich",    lang: "de" },
-  { id: "p04", aud: "atco", name: "L. Favre",   role: "Supervisor, Tower Geneva",    lang: "fr" },
-  { id: "p05", aud: "atco", name: "R. Silva",   role: "Supervisor, flow management", lang: "en" },
-  { id: "p06", aud: "eng",  name: "S. Meier",   role: "FDP on-call engineer",        lang: "de" },
-  { id: "p07", aud: "eng",  name: "J. Rochat",  role: "Network on-call engineer",    lang: "fr" },
-  { id: "p08", aud: "eng",  name: "P. Novak",   role: "Supplier liaison",            lang: "en" },
-  { id: "p09", aud: "mgmt", name: "D. Steiner", role: "Head of operations",          lang: "de" },
-  { id: "p10", aud: "mgmt", name: "N. Girard",  role: "Chief operating officer",     lang: "fr" },
-  { id: "p11", aud: "mgmt", name: "E. Walsh",   role: "Duty manager",                lang: "en" }
+/* Fictional people with placeholder contact details (reserved .example domain,
+   +41 00 numbers that do not exist). Sending is simulated, nothing is ever
+   contacted. The SMC edits this list on the Stakeholders page. */
+const DEFAULT_DIRECTORY = [
+  { id: "p01", aud: "atco", name: "M. Keller",  role: "Supervisor, ACC Zurich",      lang: "de", email: "m.keller@skynet.example",  phone: "+41 00 000 01 01" },
+  { id: "p02", aud: "atco", name: "C. Dubois",  role: "Supervisor, ACC Geneva",      lang: "fr", email: "c.dubois@skynet.example",  phone: "+41 00 000 01 02" },
+  { id: "p03", aud: "atco", name: "A. Brunner", role: "Supervisor, Tower Zurich",    lang: "de", email: "a.brunner@skynet.example", phone: "+41 00 000 01 03" },
+  { id: "p04", aud: "atco", name: "L. Favre",   role: "Supervisor, Tower Geneva",    lang: "fr", email: "l.favre@skynet.example",   phone: "+41 00 000 01 04" },
+  { id: "p05", aud: "atco", name: "R. Silva",   role: "Supervisor, flow management", lang: "en", email: "r.silva@skynet.example",   phone: "+41 00 000 01 05" },
+  { id: "p06", aud: "eng",  name: "S. Meier",   role: "FDP on-call engineer",        lang: "de", email: "s.meier@skynet.example",   phone: "+41 00 000 02 01" },
+  { id: "p07", aud: "eng",  name: "J. Rochat",  role: "Network on-call engineer",    lang: "fr", email: "j.rochat@skynet.example",  phone: "+41 00 000 02 02" },
+  { id: "p08", aud: "eng",  name: "P. Novak",   role: "Supplier liaison",            lang: "en", email: "p.novak@skynet.example",   phone: "+41 00 000 02 03" },
+  { id: "p09", aud: "mgmt", name: "D. Steiner", role: "Head of operations",          lang: "de", email: "d.steiner@skynet.example", phone: "+41 00 000 03 01" },
+  { id: "p10", aud: "mgmt", name: "N. Girard",  role: "Chief operating officer",     lang: "fr", email: "n.girard@skynet.example",  phone: "+41 00 000 03 02" },
+  { id: "p11", aud: "mgmt", name: "E. Walsh",   role: "Duty manager",                lang: "en", email: "e.walsh@skynet.example",   phone: "+41 00 000 03 03" }
 ];
+let DIRECTORY = DEFAULT_DIRECTORY.map((p) => ({ ...p }));
 
 /* Record item: id, section, audiences, English text, plus reference DE/FR
    translations used only in demo mode (no AI). */
@@ -1401,6 +1498,184 @@ setInterval(() => {
 }, 250);
 
 /* =====================================================================
+   Stakeholder directory
+   Stored as one shared JSON file in Tile Files; localStorage when the SDK is
+   missing (demo). A change only alters who a message goes to; it never
+   redrafts or withdraws an approval.
+   ===================================================================== */
+const DIR_FILE = "stakeholders.json";
+const DIR_LOCAL = "smc-stakeholders-v1";
+const D = { page: "messages", filter: "all", q: "", editing: null, confirmRemove: false,
+  store: "checking", saveMsg: "", saveKind: "" };
+
+/* Accept only well-formed rows from storage; anything else is dropped. */
+function cleanPerson(p) {
+  if (!p || typeof p !== "object") return null;
+  const str = (v, n) => (typeof v === "string" ? v.trim().slice(0, n) : "");
+  const out = { id: str(p.id, 40), aud: p.aud, name: str(p.name, 60), role: str(p.role, 80), lang: p.lang, email: str(p.email, 80), phone: str(p.phone, 30) };
+  return out.id && out.name && out.role && AUD[out.aud] && LANGS.includes(out.lang) ? out : null;
+}
+const cleanDirectory = (list) => Array.isArray(list) ? list.map(cleanPerson).filter(Boolean) : null;
+const filesReady = () => !!(window.tile && tile.files && !window.__tileLoadFailed);
+
+async function loadDirectory() {
+  if (filesReady()) {
+    try {
+      const r = await tile.files.get(DIR_FILE, { scope: "shared" });
+      D.store = "tile";
+      if (!r.ok) { D.saveMsg = "Default list. Changes are saved for everyone who opens this tile."; return; }
+      const list = cleanDirectory(await r.json());
+      if (list) { DIRECTORY = list; D.saveMsg = "Saved for everyone who opens this tile."; D.saveKind = "ok"; }
+      else { D.saveMsg = "The saved stakeholder file was unreadable. Showing the default list; saving replaces the file."; D.saveKind = "bad"; }
+      return;
+    } catch (e) { /* fall through to the device copy */ }
+  }
+  try {
+    const raw = localStorage.getItem(DIR_LOCAL);
+    const list = raw ? cleanDirectory(JSON.parse(raw)) : null;
+    if (list) DIRECTORY = list;
+    D.store = "local"; D.saveMsg = "Demo mode: changes are saved on this device only.";
+  } catch (e) { D.store = "memory"; D.saveMsg = "Changes are kept until you close this page."; }
+}
+
+async function saveDirectory() {
+  const body = JSON.stringify(DIRECTORY);
+  if (D.store === "tile") {
+    try {
+      await tile.files.put(DIR_FILE, body, { scope: "shared", contentType: "application/json" });
+      D.saveMsg = `Saved ${nowUtc()}. Everyone who opens this tile sees this list.`; D.saveKind = "ok";
+    } catch (e) {
+      const off = e && (e.status === 404 || /404/.test(String(e.message)));
+      D.saveMsg = off ? "Not saved: Files is off for this tile. Ask a tile admin to enable it under Manage → Services, then save again."
+        : "Not saved: the tile could not store the list. Your change is still on screen; try again.";
+      D.saveKind = "bad";
+    }
+  } else if (D.store === "local") {
+    try { localStorage.setItem(DIR_LOCAL, body); D.saveMsg = `Saved ${nowUtc()} on this device only.`; D.saveKind = "ok"; }
+    catch (e) { D.saveMsg = "Not saved: this browser blocked local storage. Your change is kept until you close this page."; D.saveKind = "bad"; }
+  }
+  renderStake();
+}
+
+function directoryChanged() {
+  render();       // recipients feed the message page: counts and "To" chips must match
+  renderStake();
+  saveDirectory();
+}
+
+function visiblePeople() {
+  const q = D.q.trim().toLocaleLowerCase();
+  return DIRECTORY
+    .filter((p) => (D.filter === "all" || p.aud === D.filter)
+      && (!q || [p.name, p.role, p.email, p.phone, AUD[p.aud].label, LANG_NAME[p.lang]].some((v) => v.toLocaleLowerCase().includes(q))))
+    .sort((a, b) => AUD_ORDER.indexOf(a.aud) - AUD_ORDER.indexOf(b.aud) || a.name.localeCompare(b.name));
+}
+
+function renderStake() {
+  const people = visiblePeople();
+  $("dircount").textContent = `${people.length} of ${DIRECTORY.length} stakeholder${DIRECTORY.length === 1 ? "" : "s"}`;
+  $("dirgroup").replaceChildren(...[["all", "All"], ...AUD_ORDER.map((a) => [a, AUD[a].short])].map(([v, label]) =>
+    h("button", { type: "button", role: "tab", "aria-selected": String(D.filter === v), onclick: () => { D.filter = v; renderStake(); } }, label)));
+  $("diradd").disabled = EDIT_MODE;
+  const row = (p) => h("tr", null,
+    h("td", { class: "who" }, p.name),
+    h("td", null, p.role),
+    h("td", { title: LANG_NAME[p.lang] }, h("span", { class: "pill" }, p.lang.toUpperCase())),
+    h("td", { class: "contact" }, p.email, p.email && p.phone ? h("br") : null, p.phone),
+    h("td", null, AUD[p.aud].label),
+    h("td", { class: "act" }, h("button", { class: "btn ghost", type: "button", disabled: EDIT_MODE, "aria-label": `Edit ${p.name}`, onclick: () => openStakeholder(p.id) }, "Edit")));
+  $("dirtable").replaceChildren(people.length
+    ? h("table", null,
+        h("thead", null, h("tr", null, ["Name", "Function", "Language", "Contact", "Group", ""].map((t) => h("th", { scope: "col" }, t)))),
+        h("tbody", null, people.map(row)))
+    : h("p", { class: "empty" }, DIRECTORY.length ? "No stakeholder matches. Clear the search or pick another group." : "No stakeholders yet. Add the first one."));
+  const ds = $("dirsave");
+  ds.textContent = D.saveMsg; ds.className = "savestate" + (D.saveKind ? " " + D.saveKind : "");
+}
+
+function resetRemove() { D.confirmRemove = false; const b = $("stremove"); b.textContent = "Remove"; b.classList.remove("sure"); }
+
+function openStakeholder(id) {
+  if (EDIT_MODE) return;
+  const p = id ? DIRECTORY.find((x) => x.id === id) : null;
+  D.editing = p ? p.id : "new";
+  $("sttitle").textContent = p ? "Edit stakeholder" : "Add stakeholder";
+  $("sf-name").value = p ? p.name : "";
+  $("sf-role").value = p ? p.role : "";
+  $("sf-aud").value = p ? p.aud : "atco";
+  $("sf-lang").value = p ? p.lang : "en";
+  $("sf-email").value = p ? p.email : "";
+  $("sf-phone").value = p ? p.phone : "";
+  $("sterr").textContent = "";
+  $("stremove").hidden = !p;
+  resetRemove();
+  $("stdlg").showModal();
+  $("sf-name").focus();
+}
+
+function saveStakeholder(e) {
+  e.preventDefault();
+  if (EDIT_MODE) return;
+  const v = (id) => $(id).value.trim();
+  const rec = { name: v("sf-name"), role: v("sf-role"), aud: $("sf-aud").value, lang: $("sf-lang").value, email: v("sf-email"), phone: v("sf-phone") };
+  const err = !rec.name ? "Enter a name."
+    : !rec.role ? "Enter a function."
+    : !rec.email && !rec.phone ? "Enter an email or a phone number so the SMC can reach this person."
+    : rec.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rec.email) ? "Enter the email as name@example.com."
+    : null;
+  if (err) { $("sterr").textContent = err; return; }
+  if (D.editing === "new") {
+    DIRECTORY.push({ id: "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), ...rec });
+    log("SMC", "Stakeholder added", { detail: `${rec.name} (${rec.role}, ${AUD[rec.aud].short}, ${rec.lang.toUpperCase()})` });
+  } else {
+    const p = DIRECTORY.find((x) => x.id === D.editing);
+    if (!p) { $("stdlg").close(); return; }
+    const changed = Object.keys(rec).filter((k) => p[k] !== rec[k]);
+    Object.assign(p, rec);
+    log("SMC", "Stakeholder edited", { detail: `${rec.name}: ${changed.length ? changed.join(", ") : "no change"}` });
+  }
+  $("stdlg").close();
+  directoryChanged();
+}
+
+function removeStakeholder() {
+  if (EDIT_MODE) return;
+  const p = DIRECTORY.find((x) => x.id === D.editing);
+  if (!p) return;
+  // Two steps: removing someone drops them from every future message.
+  if (!D.confirmRemove) { D.confirmRemove = true; const b = $("stremove"); b.textContent = `Confirm: remove ${p.name}`; b.classList.add("sure"); return; }
+  DIRECTORY = DIRECTORY.filter((x) => x.id !== p.id);
+  S.unselected.delete(p.id);
+  log("SMC", "Stakeholder removed", { detail: `${p.name} (${p.role}, ${AUD[p.aud].short}, ${p.lang.toUpperCase()})` });
+  $("stdlg").close();
+  directoryChanged();
+}
+
+function showPage(page) {
+  D.page = page;
+  const stake = page === "stake";
+  $("view-messages").hidden = stake;
+  $("view-stake").hidden = !stake;
+  document.querySelectorAll(".nav .msg-only").forEach((el) => { el.hidden = stake; });
+  document.querySelectorAll("#pages button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.page === page)));
+  if (stake) renderStake();
+  try { history.replaceState(null, "", stake ? "#stakeholders" : location.pathname + location.search); } catch (e) { /* sandboxed frame */ }
+}
+
+function initStakeholders() {
+  $("sf-aud").replaceChildren(...AUD_ORDER.map((a) => h("option", { value: a }, AUD[a].label)));
+  $("sf-lang").replaceChildren(...LANGS.map((l) => h("option", { value: l }, LANG_NAME[l])));
+  document.querySelectorAll("#pages button").forEach((b) => b.addEventListener("click", () => showPage(b.dataset.page)));
+  $("diradd").addEventListener("click", () => openStakeholder(null));
+  $("dirsearch").addEventListener("input", (e) => { D.q = e.target.value; renderStake(); });
+  $("stform").addEventListener("submit", saveStakeholder);
+  $("stremove").addEventListener("click", removeStakeholder);
+  $("stcancel").addEventListener("click", () => $("stdlg").close());
+  $("stclose").addEventListener("click", () => $("stdlg").close());
+  $("stdlg").addEventListener("click", (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); });
+}
+
+/* =====================================================================
    Start-up
    ===================================================================== */
 async function detectAi() {
@@ -1444,9 +1719,11 @@ function startScenario(i) {
   $("simclose").addEventListener("click", () => $("simdlg").close());
   $("simdlg").addEventListener("close", () => { S.simOpen = null; $("simtip").hidden = true; });
   $("simdlg").addEventListener("click", (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); });
+  initStakeholders();
   loadScenario(0);
   render();
-  await Promise.all([detectAi(), detectMe()]);
+  await Promise.all([detectAi(), detectMe(), loadDirectory()]);
+  if (location.hash === "#stakeholders") showPage("stake");
   log("System", "Session started", { detail: S.ai.state === "ready" ? `Tile AI ${S.ai.model || "default model"}` : "demo mode" });
   render();
   if (!EDIT_MODE) audiencesFor().forEach((a) => generateAudience(a));

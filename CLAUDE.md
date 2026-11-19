@@ -39,7 +39,7 @@ These come from the requirements. Do not weaken them without an explicit decisio
 - **Every AI result is validated before it is shown:** schema shape, bullet counts, source IDs. Failures fall back visibly and are logged. No silent fallbacks.
 - **Rendering:** build DOM with the `h()` helper and `textContent`. Never `innerHTML` with record, AI or user text. No `eval`.
 - **Edit mode:** respect `window.__PAGES_EDIT__`. No AI calls or sends while it is set.
-- **Synthetic data only.** Fictional people (initials and surname, role, language), no emails or phone numbers, no real incidents. Tile uploads declare "no personal data".
+- **Synthetic data only.** Fictional people (initials and surname, function, language) with placeholder contact details only: `@skynet.example` addresses and non-existent `+41 00` numbers. No real people, contacts or incidents. Tile uploads declare "no personal data".
 - **Visible status:** every SDK-dependent feature shows its state in text (checking / ready / demo / failed), never just colour.
 - Keep functions small and named by what they do (`generateAudience`, `checksFor`, `simulateSend`). Comment the *why* for non-obvious rules (reading gate timing, hash checks).
 
