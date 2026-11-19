@@ -125,7 +125,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .sendbox .why { font-size: 13px; color: var(--ink-2); }
 .sendbox .why.done { color: var(--green); }
 
-.metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin-top: 18px; border-radius: 14px; background: var(--well); padding: 12px 4px; }
+.metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 18px; border-radius: 14px; background: var(--well); padding: 12px 4px; }
 .metric { padding: 2px 14px; border-left: 1px solid var(--line-2); min-width: 0; }
 .metric:first-child { border-left: 0; }
 .metric .k { font-size: 11px; color: var(--ink-2); line-height: 1.3; }
@@ -134,8 +134,8 @@ ul { margin: 0; padding: 0; list-style: none; }
 .metric .v.muted { color: var(--ink-3); font-size: 15px; font-weight: 500; }
 .metric .m { font-size: 11px; color: var(--ink-3); }
 @media (max-width: 720px) {
-  .metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 12px; }
-  .metric:nth-child(4) { border-left: 0; }
+  .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 12px; }
+  .metric:nth-child(3) { border-left: 0; }
 }
 
 .seg { display: inline-flex; margin-top: 22px; background: #e8e8ed; border-radius: 10px; padding: 3px; gap: 2px; }
@@ -186,14 +186,36 @@ details.more summary::-webkit-details-marker { display: none; }
 details.more summary::after { content: " ›"; }
 details.more[open] summary::after { content: " ⌄"; }
 
-/* similarity heatmap */
-.heatmaps { display: flex; flex-wrap: wrap; gap: 28px; margin-top: 14px; }
-.hm h3 { font: 600 13px var(--sans); margin-bottom: 8px; }
-.hgrid { display: grid; gap: 2px; }
-.hgrid .ax { font: 10px var(--mono); color: var(--ink-3); display: flex; align-items: center; justify-content: center; }
-.hgrid .cell { width: 26px; height: 26px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font: 600 9px var(--mono); }
-.legend { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--ink-3); margin-top: 12px; }
-.legend .ramp { width: 120px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, #cde2fb, #86b6ef, #3987e5, #1c5cab, #0d366b); }
+/* similarity button in the metrics row */
+.metric.simcell { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 4px; }
+.metric.simcell .btn { padding: 6px 14px; font-size: 13px; }
+
+/* similarity dialog: two vector spaces side by side */
+.dlg { border: 0; border-radius: 22px; padding: 0; width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 48px); box-shadow: 0 24px 80px rgba(0,0,0,.25); color: var(--ink); background: var(--card); }
+.dlg::backdrop { background: rgba(0,0,0,.28); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.dlg[open] { animation: rise .25s ease; }
+.dlg-head { position: sticky; top: 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 18px 24px; background: rgba(255,255,255,.9); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); z-index: 1; }
+.dlg-head h2 { font: 600 19px var(--display); letter-spacing: -.015em; }
+#simbody { padding: 20px 24px 24px; }
+.spaces { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+@media (max-width: 720px) { .spaces { grid-template-columns: minmax(0, 1fr); } }
+.space { background: var(--well); border-radius: 16px; padding: 16px; }
+.space .k { font-size: 13px; color: var(--ink-2); }
+.space .v { font: 600 34px/1.1 var(--display); letter-spacing: -.02em; margin-top: 2px; }
+.space .v.warn { color: var(--amber); }
+.space .m { font-size: 12px; color: var(--ink-3); }
+.space svg { display: block; width: 100%; height: auto; margin-top: 10px; background: #fff; border-radius: 12px; }
+.space svg .pair { stroke: #c7c7cc; stroke-width: 1.5; }
+.space svg .pt { stroke: #fff; stroke-width: 2; }
+.space svg .hit { fill: transparent; cursor: default; }
+.space svg .hit:focus-visible { outline: none; stroke: var(--ink); stroke-width: 2; }
+.space svg text { font: 10px var(--mono); fill: var(--ink-3); }
+.key { display: flex; gap: 14px; margin-top: 10px; font-size: 12px; color: var(--ink-2); }
+.key span { display: inline-flex; align-items: center; gap: 6px; }
+.key i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.dlg details { margin-top: 18px; font-size: 13px; }
+.dlg details summary { cursor: pointer; color: var(--blue-ink); }
+.dlg details table { margin-top: 8px; }
 .tip { position: fixed; z-index: 30; pointer-events: none; background: rgba(29,29,31,.92); color: #fff; font-size: 12px; padding: 8px 10px; border-radius: 10px; max-width: 320px; white-space: pre-line; }
 
 /* ---------- log ---------- */
@@ -238,8 +260,15 @@ footer { padding: 0 0 40px; font-size: 12px; color: var(--ink-3); }
     <summary>Verification and activity log</summary>
     <div class="card" id="logbody"></div>
   </details>
-  <footer>Synthetic data for the Graduate Academy SkyNet case. Incidents, systems and people are fictional. Sending is simulated: no SMS or email leaves this page.</footer>
 </main>
+<dialog id="simdlg" class="dlg" aria-labelledby="simtitle">
+  <div class="dlg-head">
+    <h2 id="simtitle">Translation similarity</h2>
+    <button class="btn" type="button" id="simclose">Close</button>
+  </div>
+  <div id="simbody"></div>
+  <div class="tip" id="simtip" hidden></div>
+</dialog>
 <div class="tip" id="tip" hidden></div>
 
 <script src="/vendor/tile.js" onerror="window.__tileLoadFailed = true"></script>
@@ -915,7 +944,15 @@ async function computeSimilarity(aud, seq) {
     const mat = (j) => vecs[0].map((a) => vecs[j].map((b) => cos(a, b)));
     const diag = (M) => { const n = Math.min(M.length, M[0]?.length || 0); let s = 0; for (let i = 0; i < n; i++) s += M[i][i]; return n ? s / n : 0; };
     const de = mat(1), fr = mat(2);
-    S.sim[aud] = { at: nowUtc(true), labels, texts, hashes, de: { M: de, mean: diag(de) }, fr: { M: fr, mean: diag(fr) } };
+    /* Centre each language on its own mean first: cross-lingual embeddings carry a
+       per-language offset that would otherwise dominate the projection. */
+    const centred = vecs.map((V) => {
+      const mu = V[0].map((_, j) => V.reduce((s, v) => s + v[j], 0) / V.length);
+      return V.map((v) => v.map((x, j) => x - mu[j]));
+    });
+    const flat = pca2(centred.flat());
+    const xy = { en: flat.slice(cut[0], cut[1]), de: flat.slice(cut[1], cut[2]), fr: flat.slice(cut[2], cut[3]) };
+    S.sim[aud] = { at: nowUtc(true), labels, texts, hashes, xy, de: { M: de, mean: diag(de) }, fr: { M: fr, mean: diag(fr) } };
     S.simState[aud] = "done";
     log("AI", "Similarity computed", { detail: `${AUD[aud].label}: EN→DE ${diag(de).toFixed(2)}, EN→FR ${diag(fr).toFixed(2)}` });
   } catch (e) {
@@ -1043,7 +1080,6 @@ function renderHero() {
     h("h1", null, r.title),
     h("div", { class: "facts" }, h("span", { class: "sev " + r.severity }, r.severity === "major" ? "Major incident" : "Minor incident"), h("span", null, routing))
   ];
-  if (S.ai.state !== "ready" && S.ai.state !== "checking") kids.push(h("p", { class: "modeline" }, S.ai.message));
   if (S.ai.reason === "not-enabled") kids.push(h("p", { class: "setup" }, "Admin setup: if you are not approved yet, choose Request AI access in Tile and wait for approval. Then enable AI for this tile under Manage → Services, acknowledge provider egress, and reload."));
   if (EDIT_MODE) kids.push(h("p", { class: "modeline" }, "Edit mode: drafting and sending are paused."));
   if (S.banner) kids.push(h("div", { class: "banner" + (S.bannerKind === "info" ? " info" : ""), role: "status" }, S.banner));
@@ -1094,15 +1130,20 @@ function metricsRow(aud) {
   const sim = S.sim[aud], st = S.simState[aud];
   const ms = LANGS.map((l) => S.msgs[key(aud, l)]);
   const stale = sim && ms.some((m, i) => !m || m.hash !== sim.hashes[i]);
-  const simVal = (l) => !aiReady() ? "n/a" : sim && !stale ? sim[l].mean.toFixed(2) : st && st !== "running" && st !== "done" ? "failed" : null;
-  const simHow = !aiReady() ? "needs Tile AI" : stale ? "text changed" : st && st !== "running" && st !== "done" ? st : "embedding cosine";
+  const failed = st && st !== "running" && st !== "done";
+  const simBtn = (enabled, caption) => [
+    h("button", { class: "btn", type: "button", disabled: !enabled, onclick: () => openSim(aud) }, "View similarity"),
+    caption ? h("p", { class: "m" }, caption) : null];
+  const simCell = !aiReady() ? simBtn(false, "Needs Tile AI")
+    : sim && !stale ? simBtn(true, "")
+    : failed ? simBtn(false, "Failed: " + st)
+    : simBtn(false, "Calculating…");
   const en = acc("en"), de = acc("de"), fr = acc("fr");
   return h("div", { class: "metrics", role: "group", "aria-label": "Accuracy of this message" },
     metric("Retrieval accuracy · EN", pct(en), en.how, en.v != null && en.v < 100),
     metric("Translation accuracy · DE", pct(de), de.how, de.v != null && de.v < 100),
     metric("Translation accuracy · FR", pct(fr), fr.how, fr.v != null && fr.v < 100),
-    metric("Similarity · EN→DE", simVal("de"), simHow, sim && !stale && sim.de.mean < 0.75),
-    metric("Similarity · EN→FR", simVal("fr"), simHow, sim && !stale && sim.fr.mean < 0.75));
+    h("div", { class: "metric simcell" }, simCell));
 }
 
 function langDot(aud, l) {
@@ -1173,7 +1214,6 @@ function renderGroup(aud) {
   const people = DIRECTORY.filter((p) => p.aud === aud);
   const selected = people.filter((p) => !S.unselected.has(p.id)).length;
   const langPeople = people.filter((p) => p.lang === lang);
-  const sim = S.sim[aud];
   return h("article", { class: "card group", "aria-labelledby": "g-" + aud },
     h("div", { class: "ghead" },
       h("div", null, h("h2", { id: "g-" + aud }, AUD[aud].label), h("p", { class: "sub" }, `${selected} of ${people.length} recipients · ${itemsFor(aud).length} record items`)),
@@ -1186,13 +1226,9 @@ function renderGroup(aud) {
     h("div", { class: "to" }, h("span", null, "To"),
       langPeople.length ? langPeople.map((p) => h("label", { class: "chip", title: p.role },
         h("input", { type: "checkbox", checked: !S.unselected.has(p.id), onchange: (e) => toggleRecipient(p.id, e.target.checked) }), p.name))
-        : h("span", null, "Nobody. The English text is the master for the translations.")),
+        : h("span", null, "No English recipients")),
     renderMessage(aud, lang),
-    ...renderDecision(aud, lang),
-    sim ? h("details", { class: "more" }, h("summary", null, "Show similarity matrix"),
-      h("div", { class: "heatmaps" }, heatmap(sim, "de"), heatmap(sim, "fr")),
-      h("div", { class: "legend" }, h("span", null, "≤ 0.30"), h("span", { class: "ramp" }), h("span", null, "1.00")),
-      h("p", { class: "note" }, "Each cell compares one English point with one translated point. A bright diagonal means each point matches its own translation. Supporting evidence only.")) : null);
+    ...renderDecision(aud, lang));
 }
 
 function renderGroups() {
@@ -1202,26 +1238,90 @@ function renderGroups() {
   observeMessages();
 }
 
-const RAMP = ["#cde2fb", "#b7d3f6", "#9ec5f4", "#86b6ef", "#6da7ec", "#5598e7", "#3987e5", "#2a78d6", "#256abf", "#1c5cab", "#184f95", "#104281", "#0d366b"];
-function rampColor(v) { const i = Math.round(clamp((v - 0.3) / 0.7, 0, 1) * (RAMP.length - 1)); return { bg: RAMP[i], ink: i >= 6 ? "#ffffff" : "#1d1d1f" }; }
+/* ---------- similarity dialog ---------- */
+/* Fixed colour per language (dataviz categorical slots 1–3); never reassigned. */
+const LANG_COLOR = { en: "#2a78d6", de: "#eb6834", fr: "#1baf7a" };
+function sv(tag, attrs, ...kids) {
+  const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null) continue;
+    if (k.startsWith("on") && typeof v === "function") el.addEventListener(k.slice(2), v); else el.setAttribute(k, v);
+  }
+  for (const c of kids.flat()) if (c != null) el.append(c instanceof Node ? c : document.createTextNode(String(c)));
+  return el;
+}
 
-function heatmap(sim, lang) {
-  const M = sim[lang].M, L = sim.labels, tip = $("tip");
-  const cols = M[0] ? M[0].length : 0;
-  const grid = h("div", { class: "hgrid", style: `grid-template-columns: 28px repeat(${cols}, 26px)` });
-  grid.append(h("span", { class: "ax" }, ""), ...Array.from({ length: cols }, (_, j) => h("span", { class: "ax" }, L[j] || j + 1)));
-  M.forEach((row, i) => {
-    grid.append(h("span", { class: "ax" }, L[i] || i + 1));
-    row.forEach((v, j) => {
-      const c = rampColor(v);
-      const text = `EN ${L[i]}: ${sim.texts[0][i]}\n${lang.toUpperCase()} ${L[j]}: ${sim.texts[lang === "de" ? 1 : 2][j]}\ncosine ${v.toFixed(3)}`;
-      const show = (e) => { tip.textContent = text; tip.hidden = false; const r = e.target.getBoundingClientRect(); tip.style.left = Math.max(8, Math.min(r.right + 8, innerWidth - 330)) + "px"; tip.style.top = r.top + "px"; };
-      grid.append(h("span", { class: "cell", tabindex: "0", role: "img", "aria-label": `EN ${L[i]} versus ${lang.toUpperCase()} ${L[j]}: ${v.toFixed(2)}`,
-        style: `background:${c.bg};color:${c.ink}`, onmouseenter: show, onfocus: show, onmouseleave: () => { tip.hidden = true; }, onblur: () => { tip.hidden = true; } },
-        i === j ? v.toFixed(2).slice(1) : ""));
-    });
+/* Both panels share one projection and one scale, so English sits in the same place in each. */
+function spacePanel(sim, lang) {
+  const W = 420, H = 300, P = 28, tip = $("simtip");
+  const all = [...sim.xy.en, ...sim.xy.de, ...sim.xy.fr];
+  const xs = all.map((p) => p[0]), ys = all.map((p) => p[1]);
+  const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+  const X = (x) => P + ((x - x0) / ((x1 - x0) || 1)) * (W - 2 * P);
+  const Y = (y) => H - P - ((y - y0) / ((y1 - y0) || 1)) * (H - 2 * P);
+  const n = Math.min(sim.xy.en.length, sim.xy[lang].length);
+  const ti = lang === "de" ? 1 : 2;
+  const svg = sv("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `English and ${LANG_NAME[lang]} points in a shared vector space` });
+  for (let i = 0; i < n; i++) svg.append(sv("line", { class: "pair", x1: X(sim.xy.en[i][0]), y1: Y(sim.xy.en[i][1]), x2: X(sim.xy[lang][i][0]), y2: Y(sim.xy[lang][i][1]) }));
+  for (const l of ["en", lang]) sim.xy[l].forEach((p, i) => {
+    const cx = X(p[0]), cy = Y(p[1]);
+    const cosv = sim[lang].M[i]?.[i];
+    const text = `${sim.labels[i] || ""} · ${l.toUpperCase()}\n${sim.texts[l === "en" ? 0 : ti][i]}` + (cosv != null ? `\nCosine EN↔${lang.toUpperCase()}: ${cosv.toFixed(3)}` : "");
+    const show = (e) => { tip.textContent = text; tip.hidden = false; const r = e.target.getBoundingClientRect(); tip.style.left = Math.max(8, Math.min(r.right + 10, innerWidth - 330)) + "px"; tip.style.top = Math.max(8, r.top - 8) + "px"; };
+    const hide = () => { tip.hidden = true; };
+    svg.append(sv("circle", { class: "pt", cx, cy, r: 5.5, fill: LANG_COLOR[l] }));
+    if (l === "en" && sim.labels[i]) svg.append(sv("text", { x: cx + 9, y: cy + 3.5 }, sim.labels[i]));
+    svg.append(sv("circle", { class: "hit", cx, cy, r: 12, tabindex: "0", "aria-label": text.replace(/\n/g, ". "), onmouseenter: show, onmouseleave: hide, onfocus: show, onblur: hide }));
   });
-  return h("div", { class: "hm" }, h("h3", null, `English → ${LANG_NAME[lang]} · ${sim[lang].mean.toFixed(2)}`), grid);
+  const mean = sim[lang].mean;
+  return h("div", { class: "space" },
+    h("p", { class: "k" }, `English ↔ ${LANG_NAME[lang]}`),
+    h("p", { class: "v" + (mean < 0.75 ? " warn" : "") }, mean.toFixed(2)),
+    h("p", { class: "m" }, "Mean cosine similarity per point (1.00 = same meaning)"),
+    svg,
+    h("div", { class: "key" },
+      h("span", null, h("i", { style: `background:${LANG_COLOR.en}` }), "English"),
+      h("span", null, h("i", { style: `background:${LANG_COLOR[lang]}` }), LANG_NAME[lang]),
+      h("span", null, h("i", { style: "background:#c7c7cc;border-radius:1px;height:2px;width:14px" }), "Same point")));
+}
+
+function openSim(aud) {
+  if (!S.sim[aud]) return;
+  S.simOpen = aud;
+  renderSimDialog();
+  if (!$("simdlg").open) $("simdlg").showModal();
+}
+function renderSimDialog() {
+  const dlg = $("simdlg"), aud = S.simOpen, sim = aud && S.sim[aud];
+  if (!sim) { if (dlg.open) dlg.close(); return; }
+  $("simtitle").textContent = `Translation similarity · ${AUD[aud].label}`;
+  $("simbody").replaceChildren(
+    h("div", { class: "spaces" }, spacePanel(sim, "de"), spacePanel(sim, "fr")),
+    h("details", null, h("summary", null, "Show values as a table"),
+      h("table", null,
+        h("thead", null, h("tr", null, ["Point", "English", "EN↔DE", "EN↔FR"].map((x) => h("th", { scope: "col" }, x)))),
+        h("tbody", null, sim.labels.map((lb, i) => h("tr", null, h("td", { class: "mono" }, lb), h("td", null, sim.texts[0][i]),
+          h("td", { class: "mono" }, sim.de.M[i]?.[i]?.toFixed(3) ?? "—"), h("td", { class: "mono" }, sim.fr.M[i]?.[i]?.toFixed(3) ?? "—")))))));
+}
+
+/* Top two principal components by power iteration (n ≤ 96 points, so this is cheap). */
+function pca2(rows) {
+  const d = rows[0].length;
+  const dot = (a, b) => { let s = 0; for (let j = 0; j < d; j++) s += a[j] * b[j]; return s; };
+  let R = rows.map((r) => r.slice());
+  const comps = [];
+  for (let c = 0; c < 2; c++) {
+    let v = Array.from({ length: d }, (_, j) => Math.sin(j + 1 + 7 * c));
+    for (let it = 0; it < 60; it++) {
+      const w = new Array(d).fill(0);
+      for (const r of R) { const s = dot(r, v); for (let j = 0; j < d; j++) w[j] += r[j] * s; }
+      const norm = Math.sqrt(dot(w, w)) || 1;
+      v = w.map((x) => x / norm);
+    }
+    comps.push(v);
+    R = R.map((r) => { const p = dot(r, v); return r.map((x, j) => x - p * v[j]); });
+  }
+  return rows.map((r) => [dot(r, comps[0]), dot(r, comps[1])]);
 }
 
 function renderLog() {
@@ -1247,7 +1347,6 @@ function renderLog() {
   };
   $("logbody").replaceChildren(
     h("h3", null, "Verification"),
-    h("p", null, "Rule checks run on every message. The hash is SHA-256 of the exact text; at send it is recomputed and compared with the hash you approved."),
     h("table", null, h("thead", null, h("tr", null, ["Message", "Status", "Accuracy", "Checks", "Hash", "Approved hash"].map((x) => h("th", { scope: "col" }, x)))), h("tbody", null, rows)),
     h("div", { class: "logbar" }, h("h3", null, "Activity log"), h("button", { class: "btn ghost", type: "button", onclick: dl }, "Download JSON")),
     h("table", null, h("thead", null, h("tr", null, ["Time", "Who", "Event", "Message", "Rev", "Hash", "Detail"].map((x) => h("th", { scope: "col" }, x)))),
@@ -1262,6 +1361,7 @@ function render() {
   renderRecord();
   renderGroups();
   renderLog();
+  if (S.simOpen) renderSimDialog();
 }
 
 /* Update one approve button without re-rendering (keeps focus and scroll). */
@@ -1341,6 +1441,9 @@ function startScenario(i) {
   sel.addEventListener("change", () => startScenario(Number(sel.value)));
   $("sources").addEventListener("change", (e) => { S.showSources = e.target.checked; renderGroups(); });
   $("log").addEventListener("toggle", renderLog);
+  $("simclose").addEventListener("click", () => $("simdlg").close());
+  $("simdlg").addEventListener("close", () => { S.simOpen = null; $("simtip").hidden = true; });
+  $("simdlg").addEventListener("click", (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); });
   loadScenario(0);
   render();
   await Promise.all([detectAi(), detectMe()]);

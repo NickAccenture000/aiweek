@@ -26,7 +26,7 @@ These come from the requirements. Do not weaken them without an explicit decisio
 3. **Audience fit:** each record item carries the audiences it is relevant to. A message only uses items tagged for its audience.
 4. **Three languages, one meaning.** DE and FR are translated from the approved English master, with the same sections and bullet count. Numbers, times, sector, node and system codes must match exactly. A rule check enforces this.
 5. **The SMC decides.** Every message (all three languages, all audiences) is approved **individually**. There is **no approve-all**, and none may be added. Approve stays locked until the message has been on screen long enough to read and every flag is ticked. Blocking issues (stale record, empty bullet, translation from an outdated English text) cannot be overridden.
-6. **Prove it.** Each audience card shows its scores side by side: **Retrieval accuracy · EN** (English vs record), **Translation accuracy · DE / FR** (translation vs English), and **Similarity · EN→DE / EN→FR** (embedding cosine, Tile AI only). Accuracy is the stricter of the rule checks and the AI review; anything below 100% is flagged. Use these labels, never "rules / AI". Approval stores a SHA-256 hash of the exact text; simulated send recomputes and compares it. Every step is in the audit trail.
+6. **Prove it.** Each audience card shows its scores side by side: **Retrieval accuracy · EN** (English vs record) and **Translation accuracy · DE / FR** (translation vs English), plus a **View similarity** button that opens the embedding similarity (EN→DE / EN→FR, Tile AI only) in a dialog. Accuracy is the stricter of the rule checks and the AI review; anything below 100% is flagged. Use these labels, never "rules / AI". Approval stores a SHA-256 hash of the exact text; simulated send recomputes and compares it. Every step is in the audit trail.
 7. **Record changes:** a record update redrafts only the audiences whose items changed and withdraws their approvals. Unchanged audiences keep their approvals.
 8. **Out of scope:** real SMS/email sending, diagnosis and severity assessment, shift handover (card 04), incident reports and closing documentation.
 
@@ -54,7 +54,7 @@ These come from the requirements. Do not weaken them without an explicit decisio
 - Type: the system UI stack (SF Pro on Apple, Segoe UI Variable on Windows); mono only for IDs and hashes. System fonts only.
 - Record and message text stay short: one line per point where possible.
 - Quality floor: works at 390 px wide without page-level horizontal scroll, visible keyboard focus, `prefers-reduced-motion` respected, state always stated in text.
-- Charts (similarity heatmap) follow the dataviz rules: one sequential blue ramp, a legend, hover/focus tooltip, a table view.
+- Charts (the similarity vector spaces) follow the dataviz rules: a fixed colour per language (EN blue, DE orange, FR aqua), a legend, hover/focus tooltip, a table view.
 
 **Copy:**
 - Write for the SMC under time pressure: short, plain, active voice, sentence case.
@@ -74,12 +74,15 @@ Copies live in `skills/` so every teammate works from the same version. Installe
 | Skill | Use it for |
 |---|---|
 | `skills/tile-skill` (`/tile-skill`) | Anything touching the Tile SDK, AI calls, publishing the tile, admin setup and the edit-mode hand-off |
-| `skills/frontend-design` (`/frontend-design`) | Any new or reshaped UI. Keep the strip-bay direction above unless the team changes it |
+| `skills/frontend-design` (`/frontend-design`) | Any new or reshaped UI. Keep the visual direction above unless the team changes it |
 | `skills/code-review` (`/code-review`) | Before every merge. Pay particular attention to: escaping of AI and record text, approval-gate bypasses, hash compare at send, SDK error paths |
 | `skills/documentation` (`/documentation`) | README, demo script, hand-off and rollout notes |
 
 ## Running and checking
 
-- **Local demo:** open `index.html` in Edge or Chrome. The header says "Demo mode".
-- **With AI:** publish `index.html` as a **private** tile. A tile admin then needs: Request AI access (if not yet approved) → app-admin approval → Manage → Services → enable AI and acknowledge provider egress → reload. The header then shows "Tile AI ready", the model, and call/token/cost counters (input for the tokenomics slide).
+- **Local demo:** open `index.html` in Edge or Chrome, or run `serve.ps1` (http://localhost:5173). The top bar says "Demo mode".
+- **With AI:** publish `index.html` as a **private** tile. A tile admin then needs: Request AI access (if not yet approved) → app-admin approval → Manage → Services → enable AI and acknowledge provider egress → reload. The top bar then shows "AI on" with call/token/cost counters (input for the tokenomics slide); hover it for the model.
+- **Republishing:** `publish.ps1 -Slug <slug>` with `$env:TILE_TOKEN` set to a `content:write` tile access token (Manage → Automation). Never commit the token. Republishing replaces edits saved in Tile's editor.
+- **No descriptive filler in the UI.** Status lines appear only when they ask for an action (for example the admin AI setup hint).
+- **Similarity** is shown only in the "View similarity" dialog: English and each translation side by side in one shared 2D projection of the embeddings (per-language centred, PCA), with a table view.
 - **Before you call a change done:** both incidents load; approve is locked until read; send blocks when text changed after approval; "Apply record update" withdraws only affected approvals; the minor incident has no management group; the browser console shows no errors.
