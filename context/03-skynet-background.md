@@ -362,23 +362,7 @@ SKYFORGE manuals shown:
 
 ### Access instructions
 
-1. Open the following link in your browser: [AeroDoc](https://aero-doc.vercel.app/login)
-2. If you are accessing the tool for the first time, create a user account and request access to the application.
-3. After clicking the link you will be redirected to the Vercel.com website.
-4. Select one of the available sign-up options *(e.g., email or other listed provider)*.
-5. Complete the registration process. Select plan type **Hobby** and add your name.
-6. Once your account has been created, return to the AeroDoc link *(refresh the page or open the link again)*.
-7. Submit your access request for the tool. *(Access must be approved before you can log in to AeroDoc.)*
-8. Once your access request has been approved:
-9. Enter the following login credentials (ensure correct spelling and capitalization):
-10. Username: `operator`
-11. Password: `SkyNet2024!`
-12. Click **Login**. After successful authentication, you will be able to navigate within the application.
-
-**Speaker notes:**
-- Tool access link: https://aero-2mvp1wjsm-lukas-projects-292cccd8.vercel.app/browse
-- User name: operator
-- PW: SkyNet2024!
+*Removed from this copy. The slide gave a link and shared login for the AeroDoc mock-up, which is not part of this project. Ask the Graduate Academy team for access if you need it.*
 
 ---
 

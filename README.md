@@ -2,16 +2,22 @@
 
 Drafts incident messages for ATCO supervisors, engineering and management in English, German and French from a single incident record, checks them, and lets the SMC approve each one before a simulated send. Graduate Academy AI Week, SkyNet case, card 03.
 
-## Try it
+## Test it
 
-Open `index.html` in Edge or Chrome. Without Tile it runs in **demo mode**: rule-based drafts and bundled reference translations for two fictional incidents (one major, one minor).
+**Open the live tool:** https://tile.accenture.com/view/stakeholder-message-generator/
 
-1. Read a message until **Approve** unlocks, tick any notes, approve. The view moves on to the next language.
-2. Choose **Simulate send** for an audience once all its languages are approved.
-3. Choose **Apply record update** and watch only the affected audiences redraft.
-4. Turn on **Show sources** to see which record item each point comes from. Open **Verification and activity log** at the bottom for the full trail.
+Sign in with your Accenture account. If you see an access error, ask the team to add you. The top bar shows **AI on** when drafting, translation review and similarity run through Tile AI.
 
-For AI drafting, translation review and similarity, publish it as a private Tile with AI enabled. See [CLAUDE.md](CLAUDE.md#running-and-checking).
+1. Start with the **SKYFORGE · major** incident (selector in the top bar). All three audiences are informed.
+2. For each audience, read the message until **Approve** unlocks, tick any notes, then approve. Switch between English, German and French with the language control.
+3. Choose **View similarity** to compare English with each translation.
+4. Choose **Simulate send** once all languages of an audience are approved.
+5. Choose **Apply record update** and check that only the affected audiences are redrafted and need approval again.
+6. Try **Edit** and **Reject** on a message, and switch to the **METEOFLOW · minor** incident: management is not informed.
+
+Things to look for: wrong or missing facts, translations that don't match the English, and anything that slows you down under time pressure.
+
+**Offline fallback:** open `index.html` from the zip in Edge or Chrome. It runs in demo mode: English is taken from the record, translations are bundled references, and there is no AI review or similarity.
 
 ## Repo map
 
