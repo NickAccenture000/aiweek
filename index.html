@@ -14,8 +14,12 @@
   --ink-3: #86868b;
   --line: #e5e5ea;
   --line-2: #d2d2d7;
+  --btn: #e8e8ed;
+  --btn-hover: #dcdce1;
   --blue: #0071e3;
+  --blue-hover: #0077ed;
   --blue-ink: #0066cc;
+  --blue-bg: #e8f2fd;
   --green: #1f8a3b;
   --green-dot: #34c759;
   --amber: #a85200;
@@ -23,7 +27,13 @@
   --amber-bg: #fff6e8;
   --red: #d70015;
   --red-dot: #ff3b30;
+  --red-bg: #ffeef0;
   --hl: #fff2bf;
+  --scrim: rgba(0,0,0,.28);
+  /* light hue per stakeholder group, recipients table only */
+  --tint-atco: #eaf2fd;
+  --tint-eng: #efecfb;
+  --tint-mgmt: #e7f5f1;
   /* one colour per message subsection, shared by record and message */
   --s-affected: #ff3b30;
   --s-works: #34c759;
@@ -34,6 +44,7 @@
   --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
   --radius: 18px;
   --shadow: 0 1px 2px rgba(0,0,0,.04), 0 6px 24px rgba(0,0,0,.05);
+  --shadow-lift: 0 12px 40px rgba(0,0,0,.14);
 }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
@@ -42,234 +53,359 @@ button, input, select, textarea { font: inherit; color: inherit; letter-spacing:
 :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 6px; }
 h1, h2, h3, p { margin: 0; }
 ul { margin: 0; padding: 0; list-style: none; }
-.wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+[hidden] { display: none !important; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.wrap { max-width: 1480px; margin: 0 auto; padding: 0 20px; }
+@media (max-width: 960px) { .wrap { padding: 0 16px; } }
+
+/* ---------- sign-in ---------- */
+.login { min-height: 100vh; display: grid; place-items: center; padding: 48px 16px; }
+.login-inner { width: min(1040px, 100%); text-align: center; animation: rise .35s ease; }
+.login .kicker { font: 13px var(--mono); color: var(--ink-2); letter-spacing: 0; }
+.login h1 { font: 600 clamp(34px, 6vw, 56px)/1.05 var(--display); letter-spacing: -.03em; margin-top: 10px; }
+.login .lede { font-size: 17px; color: var(--ink-2); margin-top: 12px; }
+/* Wrapping, centred row: an incomplete last row stays centred. */
+.profiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; margin-top: 36px; }
+.profiles .profile { flex: 0 1 calc((100% - 48px) / 4); min-width: 200px; }
+@media (max-width: 480px) { .profiles .profile { flex-basis: 100%; } }
+.profile { border: 0; background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 26px 20px 22px; cursor: pointer; display: grid; justify-items: center; gap: 4px; transition: transform .2s, box-shadow .2s; }
+.profile:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); }
+.profile .avatar { width: 56px; height: 56px; border-radius: 50%; background: var(--well); display: grid; place-items: center; font: 600 19px var(--display); color: var(--ink-2); margin-bottom: 10px; }
+.profile .pname { font: 600 19px var(--display); letter-spacing: -.015em; }
+.profile .prole { font-size: 13px; color: var(--ink-2); }
+.profile .pmsg { font-size: 12px; color: var(--ink-3); margin-top: 6px; }
+.profile .plang { margin-top: 12px; font-size: 13px; font-weight: 500; color: var(--blue-ink); background: var(--blue-bg); border-radius: 980px; padding: 4px 12px; }
 
 /* ---------- nav ---------- */
 .nav { position: sticky; top: 0; z-index: 20; background: rgba(245,245,247,.82); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid rgba(0,0,0,.06); }
-.nav .wrap { display: flex; align-items: center; gap: 16px; min-height: 52px; flex-wrap: wrap; padding-top: 6px; padding-bottom: 6px; }
+.nav .wrap { display: flex; align-items: center; gap: 14px; min-height: 52px; flex-wrap: wrap; padding-top: 6px; padding-bottom: 6px; }
 .nav .name { font: 600 15px var(--display); margin-right: auto; }
-.nav select { border: 0; background: transparent; font-size: 13px; color: var(--ink-2); cursor: pointer; max-width: 60vw; }
-.svc { font-size: 12px; color: var(--ink-2); display: inline-flex; align-items: center; gap: 6px; }
-.svc::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); }
-.svc[data-state="ready"]::before { background: var(--green-dot); }
-.svc[data-state="demo"]::before, .svc[data-state="off"]::before { background: var(--amber-dot); }
-.toggle { display: inline-flex; gap: 8px; align-items: center; font-size: 12px; color: var(--ink-2); cursor: pointer; }
-.toggle input { appearance: none; width: 30px; height: 18px; border-radius: 9px; background: var(--line-2); position: relative; cursor: pointer; transition: background .2s; margin: 0; }
-.toggle input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.2); transition: transform .2s; }
-.toggle input:checked { background: var(--green-dot); }
-.toggle input:checked::after { transform: translateX(12px); }
+.nav select { border: 0; background: transparent; font-size: 13px; color: var(--ink-2); cursor: pointer; max-width: 46vw; }
+.me { display: inline-flex; align-items: center; gap: 8px; border: 0; background: var(--card); border-radius: 980px; padding: 4px 6px 4px 12px; font-size: 13px; font-weight: 500; cursor: pointer; box-shadow: 0 0 0 1px var(--line); }
+.me:hover { background: var(--well); }
+.me .lang { font: 600 11px var(--mono); letter-spacing: 0; background: var(--btn); color: var(--ink-2); border-radius: 980px; padding: 3px 8px; }
 
 /* ---------- hero ---------- */
-.hero { padding: 44px 0 28px; }
+.hero { padding: 36px 0 22px; }
 .hero .kicker { font-size: 13px; color: var(--ink-2); font-family: var(--mono); letter-spacing: 0; }
-.hero h1 { font: 600 clamp(28px, 4vw, 40px)/1.1 var(--display); letter-spacing: -.025em; margin-top: 8px; max-width: 24ch; }
+.hero h1 { font: 600 clamp(28px, 4vw, 40px)/1.1 var(--display); letter-spacing: -.025em; margin-top: 8px; max-width: 28ch; }
 .hero .facts { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-top: 14px; font-size: 14px; color: var(--ink-2); }
 .sev { font: 600 12px/1 var(--sans); letter-spacing: .02em; padding: 6px 10px; border-radius: 980px; }
-.sev.major { background: #ffe5e7; color: var(--red); }
-.sev.minor { background: #ececf0; color: var(--ink-2); }
+.sev.major { background: var(--red-bg); color: var(--red); }
+.sev.minor { background: var(--btn); color: var(--ink-2); }
 .setup, .modeline { margin-top: 14px; font-size: 13px; color: var(--ink-2); max-width: 80ch; }
 .banner { margin-top: 18px; display: inline-flex; gap: 8px; align-items: center; padding: 9px 14px; border-radius: 12px; background: var(--amber-bg); color: var(--amber); font-size: 14px; animation: rise .35s ease; }
-.banner.info { background: #e8f2fd; color: var(--blue-ink); }
-.banner:empty { display: none; }
+.banner.info { background: var(--blue-bg); color: var(--blue-ink); }
+
+/* ---------- recipients ---------- */
+.recips { margin-bottom: 20px; }
+.recips-wrap { position: relative; }
+/* The gear sits on the card's header row, outside <summary> so clicking it never toggles the table. */
+.gear { position: absolute; top: 9px; right: 48px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: transparent; color: var(--ink-2); cursor: pointer; display: grid; place-items: center; transition: background-color .2s, color .2s, transform .3s; }
+.gear:hover { background: var(--well); color: var(--ink); transform: rotate(30deg); }
+.gear svg { width: 19px; height: 19px; }
+
+/* ---------- manage stakeholders ---------- */
+.manage { padding-top: 22px; padding-bottom: 48px; max-width: 1100px; }
+.manage .back { margin-left: -10px; }
+.manage h1 { font: 600 clamp(28px, 4vw, 38px)/1.1 var(--display); letter-spacing: -.025em; margin: 10px 0 20px; }
+.manage-add { padding: 18px 20px; margin-bottom: 16px; }
+.manage-add label { display: block; font-size: 13px; font-weight: 500; color: var(--ink-2); margin-bottom: 8px; }
+.combo { position: relative; }
+.combo input { width: 100%; border: 1px solid var(--line-2); border-radius: 12px; padding: 11px 14px; font-size: 16px; background: var(--card); }
+.combo input:focus { border-color: var(--blue); outline: none; box-shadow: 0 0 0 3px var(--blue-bg); }
+.suggest { position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 15; background: var(--card); border-radius: 14px; box-shadow: var(--shadow-lift), 0 0 0 1px var(--line); padding: 6px; max-height: 360px; overflow: auto; }
+.suggest li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; padding: 9px 12px; border-radius: 10px; cursor: pointer; }
+.suggest li[aria-selected="true"], .suggest li:hover { background: var(--blue-bg); }
+.suggest .sn { font-weight: 600; }
+.suggest .sg { font-size: 12px; color: var(--ink-2); text-align: right; }
+.suggest .sd { grid-column: 1 / -1; font-size: 12px; color: var(--ink-2); }
+.suggest .empty { cursor: default; color: var(--ink-2); font-size: 14px; }
+.suggest .empty:hover { background: transparent; }
+.manage-list { padding-top: 10px; }
+.rtable td.act { width: 1%; white-space: nowrap; text-align: right; }
+.rtable .none td { color: var(--ink-3); font-size: 13px; }
+.recips > summary { display: flex; align-items: center; gap: 10px; padding: 14px 20px; cursor: pointer; list-style: none; font-size: 15px; font-weight: 600; }
+.recips > summary::-webkit-details-marker { display: none; }
+.recips > summary .count { font-weight: 400; color: var(--ink-2); font-size: 14px; }
+.recips > summary::after { content: ""; margin-left: auto; width: 8px; height: 8px; border-right: 1.5px solid var(--ink-3); border-bottom: 1.5px solid var(--ink-3); transform: rotate(45deg) translateY(-2px); transition: transform .2s; }
+.recips[open] > summary::after { transform: rotate(225deg) translateY(-2px); }
+.rtable-wrap { overflow-x: auto; padding: 0 12px 14px; }
+.rtable { border-collapse: collapse; width: 100%; font-size: 14px; }
+.rtable th, .rtable td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.rtable thead th { font-size: 12px; font-weight: 500; color: var(--ink-3); }
+.rtable .gr th, .rtable .gr td { background: var(--g-tint, var(--well)); border-bottom: 0; }
+.rtable .gr.g-atco { --g-tint: var(--tint-atco); }
+.rtable .gr.g-eng { --g-tint: var(--tint-eng); }
+.rtable .gr.g-mgmt { --g-tint: var(--tint-mgmt); }
+.rtable .gr td:first-child { border-radius: 10px 0 0 10px; }
+.rtable .gr th { border-radius: 0 10px 10px 0; font-weight: 600; }
+.rtable .gr .gmeta { font-weight: 400; color: var(--ink-2); margin-left: 8px; font-size: 13px; }
+.rtable td.tick { width: 44px; }
+.rtable input[type="checkbox"] { width: 17px; height: 17px; margin: 0; accent-color: var(--blue); cursor: pointer; }
+.rtable input:disabled { cursor: not-allowed; }
+.rtable .role { color: var(--ink-2); font-size: 13px; }
+.rtable thead th.role { font-size: 12px; color: var(--ink-3); }
+.rtable tr.off td:not(.tick) { color: var(--ink-3); }
+.rtable tr.off td.nm { text-decoration: line-through; }
+.rtable tr.off td.nm .rsub { text-decoration: none; }
+.rtable tr.na td { color: var(--ink-3); }
+.rtable .rsub { display: none; }
+@media (max-width: 600px) {
+  .rtable th, .rtable td { padding: 8px 6px; }
+  .rtable .role { display: none; }
+  .rtable .rsub { display: block; font-size: 12px; color: var(--ink-2); }
+}
 
 /* ---------- layout ---------- */
-.layout { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 24px; align-items: start; padding-bottom: 32px; }
+.layout { display: grid; grid-template-columns: minmax(360px, 5fr) minmax(0, 7fr); gap: 20px; align-items: start; padding-bottom: 28px; }
 .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); }
-@media (max-width: 960px) { .layout { grid-template-columns: minmax(0, 1fr); } .wrap { padding: 0 16px; } }
+@media (max-width: 960px) { .layout { grid-template-columns: minmax(0, 1fr); } }
 
 /* ---------- record ---------- */
-.record { position: sticky; top: 72px; padding: 22px 22px 18px; max-height: calc(100vh - 88px); overflow: auto; }
+.record { position: sticky; top: 68px; padding: 20px 22px 18px; max-height: calc(100vh - 84px); overflow: auto; }
 @media (max-width: 960px) { .record { position: static; max-height: none; } }
 .record-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .record-head h2 { font: 600 17px var(--display); }
 .lock { font-size: 12px; color: var(--ink-3); }
 .rev { font-size: 13px; color: var(--ink-2); margin-top: 2px; }
-.rsec { margin-top: 18px; }
+.rsec { margin-top: 16px; }
 .rsec h3, .msec h3 { display: flex; align-items: center; gap: 8px; font: 600 13px var(--sans); }
 .rsec h3::before, .msec h3::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--dot); flex: none; }
 .affected { --dot: var(--s-affected); } .works { --dot: var(--s-works); } .degraded { --dot: var(--s-degraded); } .expect { --dot: var(--s-expect); }
-.ritem { padding: 7px 0 7px 16px; border-bottom: 1px solid var(--line); transition: background-color .4s; border-radius: 6px; }
+.ritem { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; padding: 6px 4px 6px 16px; border-bottom: 1px solid var(--line); border-radius: 6px; }
 .ritem:last-child { border-bottom: 0; }
 .ritem p { font-size: 14px; line-height: 1.4; }
-.ritem .meta { font-size: 11px; color: var(--ink-3); margin-top: 2px; font-family: var(--mono); letter-spacing: 0; }
-.ritem.hl { background: var(--hl); }
-.ritem.changed p::after { content: "Updated"; margin-left: 6px; font: 600 10px var(--sans); color: var(--amber); background: var(--amber-bg); padding: 2px 6px; border-radius: 980px; vertical-align: 1px; }
-.next { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
+.ritem .meta { font-size: 11px; color: var(--ink-3); font-family: var(--mono); letter-spacing: 0; white-space: nowrap; flex: none; }
+.ritem.empty { color: var(--ink-3); font-size: 13px; }
+.ritem.changed > p:first-child::after { content: "Updated"; margin-left: 6px; font: 600 10px var(--sans); color: var(--amber); background: var(--amber-bg); padding: 2px 6px; border-radius: 980px; vertical-align: 1px; }
+.next { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
 .next p { font-size: 13px; color: var(--ink-2); margin-bottom: 10px; }
 .next b { color: var(--ink); font-weight: 600; }
 
 /* ---------- buttons ---------- */
-.btn { border: 0; border-radius: 980px; padding: 8px 16px; font-size: 14px; font-weight: 500; cursor: pointer; background: #e8e8ed; color: var(--ink); transition: background-color .2s, opacity .2s, transform .1s; }
-.btn:hover:not(:disabled) { background: #dcdce1; }
+.btn { border: 0; border-radius: 980px; padding: 8px 16px; font-size: 14px; font-weight: 500; cursor: pointer; background: var(--btn); color: var(--ink); transition: background-color .2s, opacity .2s, transform .1s; }
+.btn:hover:not(:disabled) { background: var(--btn-hover); }
 .btn:active:not(:disabled) { transform: scale(.98); }
 .btn:disabled { cursor: not-allowed; opacity: .45; }
 .btn.blue { background: var(--blue); color: #fff; }
-.btn.blue:hover:not(:disabled) { background: #0077ed; }
+.btn.blue:hover:not(:disabled) { background: var(--blue-hover); }
 .btn.dark { background: var(--ink); color: #fff; }
 .btn.dark:hover:not(:disabled) { background: #333336; }
 .btn.ghost { background: transparent; color: var(--blue-ink); padding: 8px 10px; }
-.btn.ghost:hover:not(:disabled) { background: #eef5fe; }
+.btn.ghost:hover:not(:disabled) { background: var(--blue-bg); }
 .approve { position: relative; overflow: hidden; --p: 0; min-width: 116px; }
 .approve::before { content: ""; position: absolute; inset: 0; background: rgba(0,113,227,.22); transform-origin: left; transform: scaleX(var(--p)); transition: transform .25s linear; }
 .approve:not(:disabled)::before { display: none; }
-.approve:disabled { opacity: 1; background: #e3eefb; color: var(--blue-ink); }
+.approve:disabled { opacity: 1; background: var(--blue-bg); color: var(--blue-ink); }
 .approve span { position: relative; }
 
 /* ---------- audience card ---------- */
-.groups { display: grid; gap: 24px; }
+.groups { display: grid; gap: 20px; }
 .group { padding: 24px; }
-.ghead { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
-.ghead h2 { font: 600 22px/1.2 var(--display); letter-spacing: -.02em; }
+.ghead { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.gtitle { position: relative; }
+.gname { display: flex; align-items: center; gap: 8px; }
+.gname h2 { font: 600 22px/1.2 var(--display); letter-spacing: -.02em; }
 .ghead .sub { font-size: 13px; color: var(--ink-2); margin-top: 2px; }
 .sendbox { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
 .sendbox .why { font-size: 13px; color: var(--ink-2); }
 .sendbox .why.done { color: var(--green); }
 
-.metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 18px; border-radius: 14px; background: var(--well); padding: 12px 4px; }
-.metric { padding: 2px 14px; border-left: 1px solid var(--line-2); min-width: 0; }
-.metric:first-child { border-left: 0; }
-.metric .k { font-size: 11px; color: var(--ink-2); line-height: 1.3; }
-.metric .v { font: 600 21px/1.25 var(--display); letter-spacing: -.02em; margin-top: 2px; }
-.metric .v.warn { color: var(--amber); }
-.metric .v.muted { color: var(--ink-3); font-size: 15px; font-weight: 500; }
-.metric .m { font-size: 11px; color: var(--ink-3); }
-@media (max-width: 720px) {
-  .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 12px; }
-  .metric:nth-child(3) { border-left: 0; }
-}
-
-.seg { display: inline-flex; margin-top: 22px; background: #e8e8ed; border-radius: 10px; padding: 3px; gap: 2px; }
-.seg button { border: 0; background: transparent; border-radius: 8px; padding: 6px 16px; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; transition: background-color .2s, box-shadow .2s; }
-.seg button[aria-selected="true"] { background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
-.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--line-2); flex: none; }
-.dot.ok { background: var(--green-dot); } .dot.attn { background: var(--amber-dot); } .dot.bad { background: var(--red-dot); }
-.dot.busy { background: var(--ink-3); animation: pulse 1s ease-in-out infinite; }
-
-.to { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 16px; font-size: 13px; color: var(--ink-2); }
-.to > span:first-child { margin-right: 4px; }
-.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; border-radius: 980px; border: 1px solid var(--line-2); background: #fff; cursor: pointer; font-size: 13px; color: var(--ink); transition: opacity .2s; }
-.chip input { margin: 0; accent-color: var(--blue); }
-.chip:has(input:not(:checked)) { opacity: .5; text-decoration: line-through; }
+/* the "i" accuracy button and its popover */
+.kpi { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--ink-3); background: transparent; color: var(--ink-2); display: inline-grid; place-items: center; padding: 0; cursor: pointer; font: italic 600 12px/1 Georgia, "Times New Roman", serif; transition: background-color .2s, color .2s, border-color .2s; }
+.kpi:hover, .kpi[aria-expanded="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+.kpi.attn { border-color: var(--amber-dot); color: var(--amber); }
+.kpi.attn:hover, .kpi.attn[aria-expanded="true"] { background: var(--amber-dot); color: #fff; }
+.kpi-pop { position: absolute; top: calc(100% + 8px); left: 0; z-index: 15; width: min(320px, calc(100vw - 64px)); background: var(--card); border-radius: 14px; box-shadow: var(--shadow-lift), 0 0 0 1px var(--line); padding: 8px 14px; animation: rise .18s ease; }
+.kpi-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.kpi-row:last-child { border-bottom: 0; }
+.kpi-row .k { font-size: 13px; font-weight: 500; }
+.kpi-row .m { font-size: 11px; color: var(--ink-3); }
+.kpi-row .v { font: 600 20px/1 var(--display); letter-spacing: -.02em; }
+.kpi-row .v.warn { color: var(--amber); }
+.kpi-row .v.muted { color: var(--ink-3); font-size: 14px; font-weight: 500; }
 
 /* the message, as the stakeholder receives it */
-.msg { margin-top: 12px; background: var(--well); border-radius: 16px; padding: 20px 22px; animation: rise .28s ease; }
+.msg { margin-top: 16px; background: var(--well); border-radius: 16px; padding: 20px 22px; animation: rise .28s ease; }
 .msg.approved { box-shadow: inset 0 0 0 2px var(--green-dot); }
+.msg.editing { background: var(--card); box-shadow: inset 0 0 0 1.5px var(--blue); }
 .msg .from { font-size: 12px; color: var(--ink-3); font-family: var(--mono); letter-spacing: 0; }
 .msg .title { font: 600 17px/1.3 var(--display); margin-top: 3px; }
 .msec { margin-top: 14px; }
+.msec-head { display: flex; align-items: center; gap: 8px; }
 .msec li { position: relative; padding-left: 16px; margin-top: 4px; font-size: 15px; line-height: 1.45; }
 .msec li::before { content: ""; position: absolute; left: 3px; top: .62em; width: 4px; height: 4px; border-radius: 50%; background: var(--ink-3); }
-.msec li.missing { color: var(--amber); font-style: italic; }
 .msec li.flagged { background: linear-gradient(transparent 62%, rgba(255,149,0,.25) 62%); }
-.msec textarea { width: 100%; margin-top: 6px; min-height: 48px; border: 1px solid var(--line-2); border-radius: 10px; padding: 8px 10px; background: #fff; font-size: 14px; resize: vertical; }
-.src { font: 500 10px var(--mono); color: var(--ink-3); background: #fff; border: 1px solid var(--line-2); border-radius: 5px; padding: 1px 4px; margin-left: 4px; cursor: pointer; vertical-align: 2px; letter-spacing: 0; }
-.src:hover, .src:focus-visible { background: var(--hl); color: var(--ink); }
+.msec li.raw { color: var(--amber); font-style: italic; }
+.live-note { flex-basis: 100%; font-size: 12px; color: var(--ink-3); }
+.msec .rows { display: grid; gap: 6px; margin-top: 6px; }
+.msec textarea { width: 100%; min-height: 40px; field-sizing: content; border: 1px solid var(--line-2); border-radius: 10px; padding: 8px 10px; background: var(--card); font-size: 15px; line-height: 1.4; resize: vertical; }
+.msec textarea:focus { border-color: var(--blue); outline: none; box-shadow: 0 0 0 3px var(--blue-bg); }
+.add { width: 24px; height: 24px; border: 0; padding: 0; border-radius: 50%; background: transparent; color: var(--blue); cursor: pointer; display: inline-grid; place-items: center; transition: background-color .2s, transform .1s; }
+.add:hover { background: var(--blue-bg); }
+.add:active { transform: scale(.92); }
+.add svg { width: 20px; height: 20px; }
 .msg .placeholder { color: var(--ink-2); font-size: 14px; display: flex; gap: 8px; align-items: center; }
 .msg .placeholder::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); animation: pulse 1s ease-in-out infinite; }
 
 .flags { margin-top: 14px; display: grid; gap: 6px; }
 .flag { display: flex; gap: 10px; align-items: flex-start; padding: 9px 12px; border-radius: 10px; background: var(--amber-bg); color: var(--amber); font-size: 13px; line-height: 1.4; cursor: pointer; }
 .flag input { margin: 2px 0 0; accent-color: var(--amber-dot); flex: none; }
-.flag.blocking { background: #ffeef0; color: var(--red); cursor: default; font-weight: 500; }
+.flag.blocking { background: var(--red-bg); color: var(--red); cursor: default; font-weight: 500; }
 .decide { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; }
 .decide .why { font-size: 13px; color: var(--ink-2); margin-left: 6px; }
 .decide .ok { color: var(--green); font-weight: 600; font-size: 14px; }
 .decide .bad { color: var(--red); font-weight: 600; font-size: 14px; }
 .note { font-size: 12px; color: var(--ink-3); margin-top: 10px; }
 
+.also { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 13px; }
+.also > span { color: var(--ink-2); margin-right: 2px; }
+.pill { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line-2); background: var(--card); border-radius: 980px; padding: 5px 12px 5px 10px; font-size: 13px; cursor: pointer; transition: background-color .2s, border-color .2s; }
+.pill:hover { background: var(--well); }
+
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--line-2); flex: none; }
+.dot.ok { background: var(--green-dot); } .dot.attn { background: var(--amber-dot); } .dot.bad { background: var(--red-dot); } .dot.live { background: var(--blue); }
+.dot.busy { background: var(--ink-3); animation: pulse 1s ease-in-out infinite; }
+
 .not-informed { padding: 20px 24px; color: var(--ink-2); font-size: 14px; }
 .not-informed h2 { font: 600 17px var(--display); color: var(--ink); margin-bottom: 2px; }
 
-details.more { margin-top: 16px; font-size: 13px; }
-details.more summary { cursor: pointer; color: var(--blue-ink); list-style: none; }
-details.more summary::-webkit-details-marker { display: none; }
-details.more summary::after { content: " ›"; }
-details.more[open] summary::after { content: " ⌄"; }
-
-/* similarity button in the metrics row */
-.metric.simcell { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 4px; }
-.metric.simcell .btn { padding: 6px 14px; font-size: 13px; }
-
-/* similarity dialog: two vector spaces side by side */
-.dlg { border: 0; border-radius: 22px; padding: 0; width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 48px); box-shadow: 0 24px 80px rgba(0,0,0,.25); color: var(--ink); background: var(--card); }
-.dlg::backdrop { background: rgba(0,0,0,.28); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+/* ---------- review dialog (other languages) ---------- */
+.dlg { border: 0; border-radius: 22px; padding: 0; width: min(720px, calc(100vw - 32px)); max-height: calc(100vh - 48px); box-shadow: 0 24px 80px rgba(0,0,0,.25); color: var(--ink); background: var(--card); }
+.dlg::backdrop { background: var(--scrim); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 .dlg[open] { animation: rise .25s ease; }
-.dlg-head { position: sticky; top: 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 18px 24px; background: rgba(255,255,255,.9); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); z-index: 1; }
-.dlg-head h2 { font: 600 19px var(--display); letter-spacing: -.015em; }
-#simbody { padding: 20px 24px 24px; }
-.spaces { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
-@media (max-width: 720px) { .spaces { grid-template-columns: minmax(0, 1fr); } }
-.space { background: var(--well); border-radius: 16px; padding: 16px; }
-.space .k { font-size: 13px; color: var(--ink-2); }
-.space .v { font: 600 34px/1.1 var(--display); letter-spacing: -.02em; margin-top: 2px; }
-.space .v.warn { color: var(--amber); }
-.space .m { font-size: 12px; color: var(--ink-3); }
-.space svg { display: block; width: 100%; height: auto; margin-top: 10px; background: #fff; border-radius: 12px; }
-.space svg .pair { stroke: #c7c7cc; stroke-width: 1.5; }
-.space svg .pt { stroke: #fff; stroke-width: 2; }
-.space svg .hit { fill: transparent; cursor: default; }
-.space svg .hit:focus-visible { outline: none; stroke: var(--ink); stroke-width: 2; }
-.space svg text { font: 10px var(--mono); fill: var(--ink-3); }
-.key { display: flex; gap: 14px; margin-top: 10px; font-size: 12px; color: var(--ink-2); }
-.key span { display: inline-flex; align-items: center; gap: 6px; }
-.key i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
-.dlg details { margin-top: 18px; font-size: 13px; }
-.dlg details summary { cursor: pointer; color: var(--blue-ink); }
-.dlg details table { margin-top: 8px; }
-.tip { position: fixed; z-index: 30; pointer-events: none; background: rgba(29,29,31,.92); color: #fff; font-size: 12px; padding: 8px 10px; border-radius: 10px; max-width: 320px; white-space: pre-line; }
+.dlg-head { position: sticky; top: 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 22px; background: rgba(255,255,255,.92); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); z-index: 1; }
+.dlg-head h2 { font: 600 18px var(--display); letter-spacing: -.015em; }
+#reviewbody { padding: 4px 22px 22px; }
 
-/* ---------- log ---------- */
-.log { margin: 8px 0 48px; }
+/* ---------- toast ---------- */
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 40; width: min(560px, calc(100vw - 32px)); display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-radius: 14px; background: rgba(29,29,31,.94); color: #fff; font-size: 14px; line-height: 1.4; box-shadow: var(--shadow-lift); animation: toast .3s ease; }
+.toast.warn { background: var(--amber-bg); color: var(--amber); box-shadow: var(--shadow-lift), 0 0 0 1px var(--amber-dot); }
+.toast p { flex: 1; }
+.toast button { border: 0; background: transparent; color: inherit; opacity: .75; cursor: pointer; font-size: 13px; padding: 0 2px; }
+.toast button:hover { opacity: 1; }
+
+/* ---------- verification and activity log ---------- */
+.log { margin: 8px 0 32px; }
 .log > summary { cursor: pointer; font-size: 13px; color: var(--ink-2); list-style: none; padding: 12px 0; }
 .log > summary::-webkit-details-marker { display: none; }
 .log > summary::after { content: " ›"; }
 .log[open] > summary::after { content: " ⌄"; }
-.log .card { padding: 20px 22px; overflow-x: auto; }
-.log h3 { font: 600 15px var(--display); margin: 4px 0 8px; }
-.log h3 + p { font-size: 13px; color: var(--ink-2); margin-bottom: 10px; max-width: 80ch; }
-table { border-collapse: collapse; width: 100%; font-size: 12px; }
-th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
-th { font-weight: 600; color: var(--ink-2); }
-td.mono { font-family: var(--mono); letter-spacing: 0; }
-.pass { color: var(--green); } .fail { color: var(--red); }
-.logbar { display: flex; gap: 12px; align-items: center; margin: 22px 0 8px; }
+.log .card { padding: 22px; }
+.log h3 { font: 600 15px var(--display); margin: 4px 0 14px; }
+.logbar { display: flex; gap: 12px; align-items: center; margin: 30px 0 8px; }
+.logbar h3 { margin: 0; }
+.tablewrap { overflow: auto; max-height: 440px; }
+table.act thead th { position: sticky; top: 0; background: var(--card); }
+table.act { border-collapse: collapse; width: 100%; font-size: 12px; }
+table.act th, table.act td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.act th { font-weight: 600; color: var(--ink-2); }
+td.mono { font-family: var(--mono); letter-spacing: 0; white-space: nowrap; }
+details.sent { margin-top: 4px; }
+details.sent summary { cursor: pointer; color: var(--blue-ink); }
+details.sent pre { margin: 6px 0 2px; padding: 10px 12px; background: var(--well); border-radius: 10px; font: 12px/1.5 var(--sans); white-space: pre-wrap; max-width: 60ch; }
+
+/* The flow: record -> English message per audience -> German and French.
+   Wires are drawn in one SVG over the grid, from the real node positions. */
+.flow { position: relative; display: grid; grid-template-columns: minmax(150px, 230px) minmax(240px, 1fr) minmax(150px, 230px); column-gap: clamp(56px, 9vw, 140px); row-gap: 18px; align-items: center; padding: 8px 0; }
+.wires { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.wire { fill: none; stroke: var(--line); stroke-width: 3; }
+.current { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 1 11; animation: current .9s linear infinite; }
+.current.live { stroke: var(--blue); }
+.current.ok { stroke: var(--green-dot); }
+.current.attn { stroke: var(--amber-dot); }
+.current.bad { stroke: var(--red-dot); }
+.current.pending { stroke: var(--line-2); stroke-dasharray: 4 6; animation: none; }
+.fnode { position: relative; z-index: 1; display: grid; gap: 2px; text-align: left; border: 0; border-radius: 14px; background: var(--well); padding: 12px 14px; font-size: 12px; color: var(--ink-2); }
+button.fnode { cursor: pointer; transition: box-shadow .2s, transform .1s; }
+button.fnode:hover { box-shadow: 0 0 0 1.5px var(--line-2); }
+button.fnode:active { transform: scale(.99); }
+.fnode .fk { font: 600 14px var(--display); color: var(--ink); }
+.fnode .fs { display: inline-flex; align-items: center; gap: 6px; }
+.frec { grid-column: 1; grid-row: 1 / span var(--rows); align-self: center; background: var(--ink); color: rgba(255,255,255,.7); }
+.frec .fk { color: #fff; }
+.fen { grid-column: 2; grid-row: var(--row); background: var(--card); box-shadow: 0 0 0 1px var(--line-2), var(--shadow); padding: 14px 16px; }
+.fen .fk { font-size: 16px; }
+.ftr { grid-column: 3; grid-row: var(--row); display: grid; gap: 10px; }
+.fnode.off { opacity: .5; }
+.fnode.mine { box-shadow: 0 0 0 1.5px var(--blue); }
+@media (max-width: 760px) {
+  .flow { grid-template-columns: minmax(0, 1fr); row-gap: 26px; padding-left: 22px; }
+  .frec, .fen, .ftr { grid-column: 1; grid-row: auto; }
+  .ftr { grid-template-columns: 1fr 1fr; }
+}
+
 footer { padding: 0 0 40px; font-size: 12px; color: var(--ink-3); }
 
 @keyframes rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes toast { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
 @keyframes pulse { 50% { opacity: .3; } }
+@keyframes current { to { stroke-dashoffset: -12; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body>
-<nav class="nav" aria-label="Tool">
-  <div class="wrap">
-    <span class="name">SMC Messages</span>
-    <label><span class="visually-hidden" hidden>Incident</span><select id="scenario" aria-label="Incident"></select></label>
-    <label class="toggle"><input type="checkbox" id="sources"> Show sources</label>
-    <span id="svc" class="svc" data-state="checking" role="status" aria-live="polite">Checking AI</span>
+<section class="login" id="login" aria-labelledby="login-title">
+  <div class="login-inner">
+    <p class="kicker">SkyNet · System Monitoring Control</p>
+    <h1 id="login-title">SMC Messages</h1>
+    <p class="lede">Choose your profile. Messages open in your language.</p>
+    <div class="profiles" id="profiles"></div>
   </div>
-</nav>
+</section>
 
-<main class="wrap">
-  <section class="hero" id="hero" aria-live="polite"></section>
-  <div class="layout">
-    <aside class="card record" id="record" aria-label="Incident record"></aside>
-    <section class="groups" id="groups" aria-label="Messages"></section>
-  </div>
-  <details class="log" id="log">
-    <summary>Verification and activity log</summary>
-    <div class="card" id="logbody"></div>
-  </details>
-</main>
-<dialog id="simdlg" class="dlg" aria-labelledby="simtitle">
+<div id="app" hidden>
+  <nav class="nav" aria-label="Tool">
+    <div class="wrap">
+      <span class="name">SMC Messages</span>
+      <label><span class="visually-hidden">Incident</span><select id="scenario"></select></label>
+      <button class="me" type="button" id="me"></button>
+    </div>
+  </nav>
+
+  <main class="wrap" id="main">
+    <section class="hero" id="hero" aria-live="polite"></section>
+    <div class="recips-wrap">
+      <details class="card recips" id="recips">
+        <summary>Recipients <span class="count" id="recipcount"></span></summary>
+        <div class="rtable-wrap" id="recipbody"></div>
+      </details>
+      <button class="gear" type="button" id="managebtn" aria-label="Manage stakeholders" title="Manage stakeholders"></button>
+    </div>
+    <div class="layout">
+      <aside class="card record" id="record" aria-label="Incident record"></aside>
+      <section class="groups" id="groups" aria-label="Messages"></section>
+    </div>
+    <details class="log" id="log">
+      <summary>Verification and activity log</summary>
+      <div class="card" id="logbody"></div>
+    </details>
+  </main>
+
+  <section class="wrap manage" id="manage" aria-labelledby="manage-title" hidden>
+    <button class="btn ghost back" type="button" id="manageback">‹ Back to messages</button>
+    <h1 id="manage-title">Manage stakeholders</h1>
+    <div class="card manage-add">
+      <label for="orgsearch">Add from the organisation</label>
+      <div class="combo">
+        <input id="orgsearch" type="search" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="orgsuggest" autocomplete="off" spellcheck="false" placeholder="Type a name">
+        <ul id="orgsuggest" class="suggest" role="listbox" aria-label="People in the organisation" hidden></ul>
+      </div>
+    </div>
+    <div class="card manage-list"><div class="rtable-wrap" id="managebody"></div></div>
+  </section>
+  <footer class="wrap"><p id="svc" role="status" aria-live="polite">Tile AI: checking</p></footer>
+</div>
+
+<dialog id="reviewdlg" class="dlg" aria-labelledby="reviewtitle">
   <div class="dlg-head">
-    <h2 id="simtitle">Translation similarity</h2>
-    <button class="btn" type="button" id="simclose">Close</button>
+    <h2 id="reviewtitle">Review</h2>
+    <button class="btn" type="button" id="reviewclose">Close</button>
   </div>
-  <div id="simbody"></div>
-  <div class="tip" id="simtip" hidden></div>
+  <div id="reviewbody"></div>
 </dialog>
-<div class="tip" id="tip" hidden></div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
 <script src="/vendor/tile.js" onerror="window.__tileLoadFailed = true"></script>
 <script>
@@ -292,6 +428,7 @@ const SEV_LABEL = {
 const UPD_LABEL = { en: "Update", de: "Update", fr: "Mise à jour" };
 const LANGS = ["en", "de", "fr"];
 const LANG_NAME = { en: "English", de: "German", fr: "French" };
+const LANG_SELF = { en: "English", de: "Deutsch", fr: "Français" };
 const AUD_ORDER = ["atco", "eng", "mgmt"];
 const AUD = {
   atco: { label: "ATCO supervisors", short: "ATCO",
@@ -302,23 +439,52 @@ const AUD = {
     brief: "Management, informed for major incidents only. They need a short business-level summary: what is down, impact on operations and traffic, expected restoration. At most two bullets per section, no technical jargon." }
 };
 
-/* Fictional people. No contact details: sending is simulated. */
+/* SMC profiles for the demo (the team's own names). The .example domain is
+   reserved and never delivers. `flavour` is shown on the sign-in card only. */
+const USERS = [
+  { id: "u-lb", name: "Luc Bürki",        initials: "LB", email: "luc.buerki@skynet.example",        role: "SMC, ACC Zurich",        lang: "de", flavour: "Swiss German" },
+  { id: "u-cm", name: "Chiara Mercurio",  initials: "CM", email: "chiara.mercurio@skynet.example",   role: "SMC, ACC Zurich",        lang: "de", flavour: "Luzerner-Dütsch" },
+  { id: "u-th", name: "Tiago Hungerland", initials: "TH", email: "tiago.hungerland@skynet.example",  role: "SMC, operations centre", lang: "en", flavour: "English" },
+  { id: "u-mk", name: "Mansur Kagermann", initials: "MK", email: "mansur.kagermann@skynet.example",  role: "SMC, night shift",       lang: "de", flavour: "The highest of Germans" },
+  { id: "u-hz", name: "Hugo Zweifel",     initials: "HZ", email: "hugo.zweifel@skynet.example",      role: "SMC, ACC Geneva",        lang: "fr", flavour: "French" },
+  { id: "u-rs", name: "Robert Seggewiss", initials: "RS", email: "robert.seggewiss@skynet.example",  role: "SMC, operations centre", lang: "en", flavour: "Irish English" },
+  { id: "u-na", name: "Nicolas Ammann",   initials: "NA", email: "nicolas.ammann@skynet.example",    role: "SMC, ACC Geneva",        lang: "fr", flavour: "Swiss French" }
+];
+
+/* Fictional stakeholders. No contact details: sending is simulated. */
 const DIRECTORY = [
-  { id: "p01", aud: "atco", name: "M. Keller",  role: "Supervisor, ACC Zurich",      lang: "de" },
-  { id: "p02", aud: "atco", name: "C. Dubois",  role: "Supervisor, ACC Geneva",      lang: "fr" },
-  { id: "p03", aud: "atco", name: "A. Brunner", role: "Supervisor, Tower Zurich",    lang: "de" },
-  { id: "p04", aud: "atco", name: "L. Favre",   role: "Supervisor, Tower Geneva",    lang: "fr" },
-  { id: "p05", aud: "atco", name: "R. Silva",   role: "Supervisor, flow management", lang: "en" },
-  { id: "p06", aud: "eng",  name: "S. Meier",   role: "FDP on-call engineer",        lang: "de" },
-  { id: "p07", aud: "eng",  name: "J. Rochat",  role: "Network on-call engineer",    lang: "fr" },
-  { id: "p08", aud: "eng",  name: "P. Novak",   role: "Supplier liaison",            lang: "en" },
-  { id: "p09", aud: "mgmt", name: "D. Steiner", role: "Head of operations",          lang: "de" },
-  { id: "p10", aud: "mgmt", name: "N. Girard",  role: "Chief operating officer",     lang: "fr" },
-  { id: "p11", aud: "mgmt", name: "E. Walsh",   role: "Duty manager",                lang: "en" }
+  { id: "p01", aud: "atco", name: "M. Keller",  lang: "de", channel: "Teams", role: "Supervisor ACC Zurich · sets sector capacity" },
+  { id: "p02", aud: "atco", name: "C. Dubois",  lang: "fr", channel: "Mail",  role: "Supervisor ACC Geneva · runs the flight plan fallback" },
+  { id: "p03", aud: "atco", name: "A. Brunner", lang: "de", channel: "Teams", role: "Supervisor Tower Zurich · arrival sequencing" },
+  { id: "p04", aud: "atco", name: "L. Favre",   lang: "fr", channel: "Teams", role: "Supervisor Tower Geneva" },
+  { id: "p05", aud: "atco", name: "R. Silva",   lang: "en", channel: "Mail",  role: "Flow management · liaises with the Network Manager" },
+  { id: "p06", aud: "eng",  name: "S. Meier",   lang: "de", channel: "Teams", role: "FDP on-call · owns SKYFORGE" },
+  { id: "p07", aud: "eng",  name: "J. Rochat",  lang: "fr", channel: "Teams", role: "Network on-call · gateways and links" },
+  { id: "p08", aud: "eng",  name: "P. Novak",   lang: "en", channel: "Mail",  role: "Supplier liaison · coordinates vendor on site" },
+  { id: "p09", aud: "mgmt", name: "D. Steiner", lang: "de", channel: "Mail",  role: "Head of operations · approves capacity measures" },
+  { id: "p10", aud: "mgmt", name: "N. Girard",  lang: "fr", channel: "Mail",  role: "Chief operating officer · external communication" },
+  { id: "p11", aud: "mgmt", name: "E. Walsh",   lang: "en", channel: "Teams", role: "Duty manager · first escalation point" }
+];
+
+/* Fictional organisation directory the stakeholder search draws from. It
+   includes the default stakeholders, so a removed person can be added back. */
+const ORG = [
+  ...DIRECTORY.map((p) => ({ ...p })),
+  { id: "o01", aud: "atco", name: "T. Huber",       lang: "de", channel: "Teams", role: "Supervisor ACC Zurich · night shift" },
+  { id: "o02", aud: "atco", name: "F. Rossier",     lang: "fr", channel: "Mail",  role: "Deputy supervisor Tower Geneva" },
+  { id: "o03", aud: "atco", name: "K. Moser",       lang: "de", channel: "Teams", role: "Supervisor Tower Bern" },
+  { id: "o04", aud: "atco", name: "D. Clarke",      lang: "en", channel: "Mail",  role: "Military coordination liaison" },
+  { id: "o05", aud: "eng",  name: "M. Lehmann",     lang: "de", channel: "Teams", role: "Radar on-call · SENTINELWATCH" },
+  { id: "o06", aud: "eng",  name: "A. Perrin",      lang: "fr", channel: "Mail",  role: "Voice systems on-call · ECHOVOX" },
+  { id: "o07", aud: "eng",  name: "B. Okafor",      lang: "en", channel: "Teams", role: "Data centre operations" },
+  { id: "o08", aud: "eng",  name: "R. Gerber",      lang: "de", channel: "Mail",  role: "Weather systems · METEOFLOW" },
+  { id: "o09", aud: "mgmt", name: "C. Vuilleumier", lang: "fr", channel: "Mail",  role: "Head of safety" },
+  { id: "o10", aud: "mgmt", name: "P. Baumgartner", lang: "de", channel: "Teams", role: "Head of engineering" },
+  { id: "o11", aud: "mgmt", name: "H. Murphy",      lang: "en", channel: "Mail",  role: "Communications officer" }
 ];
 
 /* Record item: id, section, audiences, English text, plus reference DE/FR
-   translations used only in demo mode (no AI). */
+   translations used only when Tile AI is off. */
 function I(id, section, aud, en, de, fr) {
   return { id, section, aud: aud.split(" "), text: en, tr: { de, fr }, trFor: en };
 }
@@ -425,24 +591,30 @@ const SCENARIOS = [
 
 /* =====================================================================
    State
+
+   Each audience holds one list of points. A point carries its text in all
+   three languages, so the three messages always share the same structure:
+   adding or removing a point in one language adds or removes it in all.
    ===================================================================== */
 const S = {
+  user: null,
+  started: false,
   scn: 0, rec: null, updIdx: 0,
   unselected: new Set(),
-  msgs: {},            // "aud:lang" -> message
-  seq: {},             // generation id per audience (drops superseded results)
-  review: {},          // aud -> "running" | "done" | "failed: …"
-  sim: {}, simState: {}, // aud -> similarity result / "running" | error text
-  view: { atco: "en", eng: "en", mgmt: "en" },
-  edits: {},           // "aud:lang" -> sections draft while the SMC edits
+  aud: {},             // aud -> { seq, tgen, nextN, points, msgs: { en, de, fr } }
+  edit: null,          // { aud, lang, secs: { section: [{ pid, text }] } } while the SMC edits
+  review: null,        // { aud, lang } shown in the review dialog
+  kpi: null,           // audience whose accuracy popover is open
+  toast: null,
   changedItems: new Set(),
-  showSources: false,
   log: [],
   banner: "", bannerKind: "warn",
-  ai: { state: "checking", model: null, residency: null, message: "", calls: 0, tokens: 0, cost: 0, costKnown: false },
-  me: "SMC on shift", meNote: "checking"
+  focusNext: null,
+  view: "messages",     // "messages" or "manage"
+  ai: { state: "checking", model: null, residency: null, reason: null, message: "", calls: 0, tokens: 0, cost: 0, costKnown: false }
 };
 const key = (aud, lang) => aud + ":" + lang;
+const msgOf = (aud, lang) => S.aud[aud] && S.aud[aud].msgs[lang];
 let GEN = 0; // global counter, so a result from a previous incident can never match a new one
 const EDIT_MODE = !!window.__PAGES_EDIT__;
 
@@ -465,44 +637,17 @@ function h(tag, props, ...kids) {
   }
   return el;
 }
+function sv(tag, attrs, ...kids) {
+  const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const [k, v] of Object.entries(attrs || {})) if (v != null) el.setAttribute(k, v);
+  for (const c of kids.flat()) if (c != null) el.append(c);
+  return el;
+}
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const nowUtc = (sec) => new Date().toISOString().slice(11, sec ? 19 : 16) + " UTC";
-const shortHash = (x) => x ? x.slice(0, 12) : "—";
 const $ = (id) => document.getElementById(id);
-
-/* Synchronous SHA-256 over UTF-8 so hashes are available during render. */
-function sha256(text) {
-  const bytes = Array.from(new TextEncoder().encode(text));
-  const P = [];
-  for (let n = 2; P.length < 64; n++) if (P.every((p) => n % p)) P.push(n);
-  const K = P.map((p) => (Math.cbrt(p) % 1) * 4294967296 | 0);
-  let H = P.slice(0, 8).map((p) => (Math.sqrt(p) % 1) * 4294967296 | 0);
-  const bitLen = bytes.length * 8;
-  bytes.push(0x80);
-  while (bytes.length % 64 !== 56) bytes.push(0);
-  const hi = Math.floor(bitLen / 4294967296);
-  for (let i = 3; i >= 0; i--) bytes.push((hi >>> (i * 8)) & 255);
-  for (let i = 3; i >= 0; i--) bytes.push((bitLen >>> (i * 8)) & 255);
-  const rr = (v, n) => (v >>> n) | (v << (32 - n));
-  for (let o = 0; o < bytes.length; o += 64) {
-    const W = new Array(64);
-    for (let i = 0; i < 16; i++) W[i] = (bytes[o + 4 * i] << 24) | (bytes[o + 4 * i + 1] << 16) | (bytes[o + 4 * i + 2] << 8) | bytes[o + 4 * i + 3];
-    for (let i = 16; i < 64; i++) {
-      const s0 = rr(W[i - 15], 7) ^ rr(W[i - 15], 18) ^ (W[i - 15] >>> 3);
-      const s1 = rr(W[i - 2], 17) ^ rr(W[i - 2], 19) ^ (W[i - 2] >>> 10);
-      W[i] = (W[i - 16] + s0 + W[i - 7] + s1) | 0;
-    }
-    let [a, b, c, d, e, f, g, hh] = H;
-    for (let i = 0; i < 64; i++) {
-      const t1 = (hh + (rr(e, 6) ^ rr(e, 11) ^ rr(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + W[i]) | 0;
-      const t2 = ((rr(a, 2) ^ rr(a, 13) ^ rr(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
-      hh = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
-    }
-    const v = [a, b, c, d, e, f, g, hh];
-    H = H.map((x, i) => (x + v[i]) | 0);
-  }
-  return H.map((v) => (v >>> 0).toString(16).padStart(8, "0")).join("");
-}
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+const keyLabel = (k) => { const [a, l] = k.split(":"); return `${AUD[a].short} · ${l.toUpperCase()}`; };
 
 /* Numbers, times and upper-case codes (UTC, ZRH-E, FDP-ZH-02, SKYFORGE).
    These must survive drafting and translation unchanged. */
@@ -510,8 +655,10 @@ const TOKEN_RE = /\b[A-Z][A-Z0-9]+(?:-[A-Z0-9]+)*\b|\d+(?:[:.,]\d+)*/g;
 const factTokens = (s) => new Set((s || "").match(TOKEN_RE) || []);
 
 function log(actor, event, info = {}) {
-  S.log.push({ time: nowUtc(true), actor, who: actor === "SMC" ? S.me : actor,
-    event, message: info.key || "", revision: S.rec ? S.rec.revision : null, hash: info.hash || "", detail: info.detail || "" });
+  S.log.push({ time: nowUtc(true), actor,
+    who: actor === "SMC" && S.user ? `${S.user.name} · ${S.user.email}` : actor,
+    event, message: info.key || "", revision: S.rec ? S.rec.revision : null, detail: info.detail || "",
+    ...(info.text ? { text: info.text } : {}) });
 }
 
 /* =====================================================================
@@ -522,17 +669,17 @@ function loadScenario(i) {
   const sc = SCENARIOS[i];
   S.scn = i; S.updIdx = 0;
   S.rec = { ...sc.record, revision: 1, items: sc.items.map((x) => ({ ...x, aud: [...x.aud], tr: { ...x.tr } })) };
-  Object.assign(S, { msgs: {}, seq: {}, review: {}, sim: {}, simState: {}, edits: {}, changedItems: new Set(), unselected: new Set(), banner: "" });
-  S.view = { atco: "en", eng: "en", mgmt: "en" };
-  log("System", "Incident record loaded", { detail: `${S.rec.id} (${S.rec.severity}), rev 1` });
+  Object.assign(S, { aud: {}, edit: null, review: null, kpi: null, changedItems: new Set(), unselected: new Set(), banner: "" });
+  log("System", "Incident record loaded", { detail: `${S.rec.id} (${S.rec.severity}), revision 1` });
 }
 const audiencesFor = () => S.rec.severity === "major" ? AUD_ORDER.slice() : ["atco", "eng"];
 const itemsFor = (aud) => SECTIONS.flatMap((s) => S.rec.items.filter((i) => i.section === s && i.aud.includes(aud)));
-const basisOf = (aud) => sha256(JSON.stringify(itemsFor(aud).map((i) => [i.id, i.section, i.text])));
+/* What an audience's message is built from. Compared as text, so a record
+   update that touches only other audiences leaves this one alone. */
+const basisOf = (aud) => JSON.stringify(itemsFor(aud).map((i) => [i.id, i.section, i.text]));
 const itemById = (id) => S.rec.items.find((i) => i.id === id);
+const refText = (it, lang) => lang === "en" ? it.text : (it.trFor === it.text ? it.tr[lang] : null);
 const recipients = (aud, lang) => DIRECTORY.filter((p) => p.aud === aud && p.lang === lang && !S.unselected.has(p.id));
-/* English is the master every translation derives from, so it always needs approval. */
-const neededLangs = (aud) => LANGS.filter((l) => l === "en" || recipients(aud, l).length > 0);
 
 function applyNextUpdate() {
   const u = SCENARIOS[S.scn].updates[S.updIdx];
@@ -549,102 +696,106 @@ function applyNextUpdate() {
   S.updIdx += 1;
   S.rec.revision += 1;
   S.rec.updatedAt = u.updatedAt;
-  log("System", "Incident record updated", { detail: `rev ${S.rec.revision}: ${u.label}` });
+  log("System", "Incident record updated", { detail: `revision ${S.rec.revision}: ${u.label}` });
   const changed = audiencesFor().filter((a) => before[a] !== basisOf(a));
   const kept = audiencesFor().filter((a) => !changed.includes(a));
   S.bannerKind = "warn";
   S.banner = `Record updated to revision ${S.rec.revision}. ` +
-    (changed.length ? `Redrafted for ${changed.map((a) => AUD[a].label).join(", ")}; please review again.` : "No message content changed.") +
+    (changed.length ? `Redrafted for ${changed.map((a) => AUD[a].label).join(", ")}; review again.` : "No message content changed.") +
     (kept.length && changed.length ? ` ${kept.map((a) => AUD[a].label).join(", ")} unchanged.` : "");
-  changed.forEach((a) => generateAudience(a));
+  const keptEdits = changed.some((a) => S.aud[a] && S.aud[a].points.some((p) => p.edited));
+  if (keptEdits) S.banner += " Your edits were kept.";
+  changed.forEach((a) => rebaseAudience(a));
   render();
 }
 
 /* =====================================================================
    Messages
    ===================================================================== */
-function emptySections() { return Object.fromEntries(SECTIONS.map((s) => [s, []])); }
 function newMsg(aud, lang, prev) {
-  return { aud, lang, rev: S.rec.revision, basis: basisOf(aud), status: "generating", origin: "none", note: "",
-    sections: emptySections(), enHash: null, hash: "", checks: [], ruleScore: null, aiScore: null, aiIssues: [],
-    review: "off", flags: [], acks: {}, readMs: 0, approvedHash: null, approvedAt: null, sent: prev ? prev.sent : null };
+  return { aud, lang, rev: S.rec.revision, basis: basisOf(aud), status: "generating", origin: "none", from: "en", note: "",
+    checks: [], ruleScore: null, aiScore: null, aiIssues: [], review: "off", flags: [], acks: {}, readMs: 0,
+    approvedText: null, approvedAt: null, approvedBy: null, sent: prev ? prev.sent : null };
 }
-const bullets = (m) => SECTIONS.flatMap((s) => m.sections[s].map((b, i) => ({ s, i, b })));
-const wordCount = (m) => bullets(m).reduce((n, x) => n + x.b.text.split(/\s+/).filter(Boolean).length, 0);
+const ptsIn = (aud, s) => S.aud[aud].points.filter((p) => p.section === s);
+const wordCount = (aud, lang) => S.aud[aud].points.reduce((n, p) => n + (p.text[lang] || "").split(/\s+/).filter(Boolean).length, 0);
 /* Reading gate: ~90 ms per word, at least 1.5 s, at most 6 s on screen. */
-const needMs = (m) => clamp(wordCount(m) * 90, 1500, 6000);
+const needMs = (m) => clamp(wordCount(m.aud, m.lang) * 90, 1500, 6000);
 
-/* The exact text the stakeholder receives. Hashed for approval and send. */
-function canonical(m) {
-  const lines = [`${S.rec.system} · ${S.rec.id}`, `${SEV_LABEL[m.lang][S.rec.severity]} · ${UPD_LABEL[m.lang]} ${m.rev}`];
+/* The exact text the stakeholder receives. Approval stores it; simulated
+   send compares it again, so nothing can change between the two. */
+function canonical(aud, lang) {
+  const m = msgOf(aud, lang);
+  const lines = [`${S.rec.system} · ${S.rec.id}`, `${SEV_LABEL[lang][S.rec.severity]} · ${UPD_LABEL[lang]} ${m.rev}`];
   for (const s of SECTIONS) {
-    if (!m.sections[s].length) continue;
-    lines.push("", SEC_LABEL[m.lang][s]);
-    for (const b of m.sections[s]) lines.push("• " + b.text);
+    const ps = ptsIn(aud, s);
+    if (!ps.length) continue;
+    lines.push("", SEC_LABEL[lang][s]);
+    for (const p of ps) lines.push("• " + (p.text[lang] || ""));
   }
   return lines.join("\n");
 }
 
 function checksFor(m) {
-  const items = itemsFor(m.aud);
-  const ids = new Set(items.map((i) => i.id));
-  const all = bullets(m);
+  const P = S.aud[m.aud].points;
+  const items = itemsFor(m.aud), ids = new Set(items.map((i) => i.id));
   const out = [];
   const add = (id, label, ok, detail, blocking) => out.push({ id, label, ok, detail: ok ? "" : detail, blocking: !!blocking });
   add("fresh", "Built from the current record", m.basis === basisOf(m.aud), "The record changed after this message was drafted.", true);
-  const empty = all.filter((x) => !x.b.text.trim()).length;
-  add("complete", "No empty bullets", all.length > 0 && empty === 0, all.length ? `${empty} bullet(s) are empty.` : "The message has no content.", true);
-  if (m.lang === "en") {
-    const badTrace = all.filter((x) => !x.b.src.length || x.b.src.some((id) => !itemById(id)));
-    add("trace", "Every bullet cites the record", badTrace.length === 0, `${badTrace.length} bullet(s) cite no record item.`);
-    const outScope = all.filter((x) => x.b.src.some((id) => itemById(id) && !ids.has(id)));
-    add("scope", `Only items for ${AUD[m.aud].label}`, outScope.length === 0, `${outScope.length} bullet(s) use items meant for another audience.`);
-    const cited = new Set(all.flatMap((x) => x.b.src));
-    const missing = items.filter((i) => !cited.has(i.id)).map((i) => i.id);
-    add("coverage", "All relevant items covered", missing.length === 0, `Not covered: ${missing.join(", ")}.`);
-    const factBad = all.filter((x) => {
-      const src = factTokens(x.b.src.map((id) => itemById(id)?.text || "").join(" "));
-      return [...factTokens(x.b.text)].some((t) => !src.has(t));
-    });
-    add("facts", "Numbers and codes match the record", factBad.length === 0, `${factBad.length} bullet(s) contain numbers or codes not in the record.`);
-  } else {
-    const en = S.msgs[key(m.aud, "en")];
-    add("basis", "Translated from the current English", !!en && m.enHash === en.hash, "The English message changed after this translation. Translate again or edit.", true);
-    const structOk = !!en && SECTIONS.every((s) => en.sections[s].length === m.sections[s].length);
-    add("structure", "Same structure as English", structOk, "Bullet structure differs from English.");
-    const factBad = en ? SECTIONS.flatMap((s) => en.sections[s].map((b, i) => {
-      const t = factTokens(m.sections[s][i]?.text);
-      return [...factTokens(b.text)].filter((x) => !t.has(x));
-    })).flat() : [];
-    add("facts", "Numbers and codes match English", factBad.length === 0, `Missing or changed: ${[...new Set(factBad)].join(", ")}.`);
+  const empty = P.filter((p) => !(p.text[m.lang] || "").trim()).length;
+  add("complete", "No empty points", P.length > 0 && empty === 0, P.length ? `${plural(empty, "point is", "points are")} empty.` : "The message has no content.", true);
+  const raw = P.filter((p) => p.raw[m.lang]);
+  add("language", `Every point is in ${LANG_NAME[m.lang]}`, raw.length === 0,
+    `${plural(raw.length, "point shows", "points show")} the placeholder: translating new wording needs a real LLM. Choose Edit and write ${raw.length === 1 ? "it" : "them"} in ${LANG_NAME[m.lang]}.`, true);
+  /* Record checks use sources and numbers/codes, which are the same in every
+     language, so they run on the SMC's own message whatever its language. */
+  const real = P.filter((p) => !p.raw[m.lang]);
+  const noSrc = P.filter((p) => !p.src.length || p.src.some((id) => !itemById(id)));
+  add("trace", "Every point comes from the record", noSrc.length === 0, `${plural(noSrc.length, "point is", "points are")} not based on a record item.`);
+  const outScope = P.filter((p) => p.src.some((id) => itemById(id) && !ids.has(id)));
+  add("scope", `Only items for ${AUD[m.aud].label}`, outScope.length === 0, `${plural(outScope.length, "point uses", "points use")} items meant for another audience.`);
+  const cited = new Set(P.flatMap((p) => p.src));
+  const missing = items.filter((i) => !cited.has(i.id)).map((i) => i.id);
+  add("coverage", "All relevant items covered", missing.length === 0, `Not covered: ${missing.join(", ")}.`);
+  const stale = P.filter((p) => p.edited && p.src.some((id) => (itemById(id)?.text ?? null) !== p.seen[id]));
+  add("stale", "Your edits match the current record", stale.length === 0,
+    `${[...new Set(stale.flatMap((p) => p.src))].join(", ")} changed in the record after your edit. Check ${stale.length === 1 ? "that point" : "those points"}.`);
+  const factBad = real.filter((p) => !recordFactsOk(p, m.lang));
+  add("facts", "Numbers and codes match the record", factBad.length === 0, `${plural(factBad.length, "point contains", "points contain")} numbers or codes not in the record.`);
+  if (m.lang !== "en") {
+    const bad = [...new Set(real.filter((p) => !p.raw.en).flatMap((p) => { const t = factTokens(p.text[m.lang]); return [...factTokens(p.text.en)].filter((x) => !t.has(x)); }))];
+    add("match", "Numbers and codes match English", bad.length === 0, `Missing or changed: ${bad.join(", ")}.`);
   }
   return out;
 }
+const recordFactsOk = (p, lang) => {
+  const src = factTokens(p.src.map((id) => itemById(id)?.text || "").join(" "));
+  return [...factTokens(p.text[lang])].every((t) => src.has(t));
+};
 
-/* Rule-based accuracy = share of per-bullet / per-item checks that pass. */
+/* Rule-based accuracy = share of per-point / per-item checks that pass. */
 function ruleScore(m) {
+  const P = S.aud[m.aud].points;
   let pass = 0, total = 0;
   const tick = (ok) => { total++; if (ok) pass++; };
   if (m.lang === "en") {
+    /* Retrieval: English against the record. */
     const items = itemsFor(m.aud), ids = new Set(items.map((i) => i.id));
-    for (const { b } of bullets(m)) {
-      tick(b.src.length && b.src.every((id) => itemById(id)));
-      tick(b.src.every((id) => ids.has(id)));
-      const src = factTokens(b.src.map((id) => itemById(id)?.text || "").join(" "));
-      tick([...factTokens(b.text)].every((t) => src.has(t)) && b.text.trim());
+    for (const p of P) {
+      tick(p.src.length && p.src.every((id) => itemById(id)));
+      tick(p.src.every((id) => ids.has(id)));
+      tick(!p.raw.en && (p.text.en || "").trim() && recordFactsOk(p, "en"));
     }
-    const cited = new Set(bullets(m).flatMap((x) => x.b.src));
+    const cited = new Set(P.flatMap((p) => p.src));
     items.forEach((i) => tick(cited.has(i.id)));
   } else {
-    const en = S.msgs[key(m.aud, "en")];
-    if (!en) return 0;
-    for (const s of SECTIONS) en.sections[s].forEach((b, i) => {
-      const t = m.sections[s][i];
-      tick(!!t && !!t.text.trim());
-      const tt = factTokens(t?.text);
-      tick([...factTokens(b.text)].every((x) => tt.has(x)));
-    });
-    tick(SECTIONS.every((s) => en.sections[s].length === m.sections[s].length));
+    /* Translation: this language against English. */
+    for (const p of P) {
+      tick(!!(p.text[m.lang] || "").trim() && !p.raw[m.lang]);
+      const t = factTokens(p.text[m.lang]);
+      /* A placeholder in English is English's gap, not this message's. */
+      tick(p.raw[m.lang] ? false : p.raw.en ? true : [...factTokens(p.text.en)].every((x) => t.has(x)));
+    }
   }
   return total ? Math.round((pass / total) * 100) : 0;
 }
@@ -666,26 +817,30 @@ function flagsFor(m) {
     f.push({ id: "acc", text: `${isEn ? "Retrieval" : "Translation"} accuracy ${acc.v}% (below 100%). Read closely before approving.` });
   m.aiIssues.forEach((x, i) => f.push({ id: "ai:" + i, text: `${SEC_LABEL[m.lang][x.section] || x.section}, point ${x.index + 1}: ${x.problem}` }));
   if (m.review === "failed") f.push({ id: "review", text: "The AI review did not finish. Accuracy is based on rule checks only." });
-  if (m.origin === "demo" && !isEn) f.push({ id: "demo", text: "Reference translation (demo mode, no AI). Compare it with the English." });
   return f;
 }
 
 function refreshMsg(m) {
-  m.hash = sha256(canonical(m));
+  if (m.status === "generating") return;
   m.checks = checksFor(m);
   m.ruleScore = ruleScore(m);
   m.flags = flagsFor(m);
   const ids = new Set(m.flags.map((x) => x.id));
   for (const k of Object.keys(m.acks)) if (!ids.has(k)) delete m.acks[k];
-  if (m.lang === "en") for (const l of ["de", "fr"]) {
-    const t = S.msgs[key(m.aud, l)];
-    if (t && t.status !== "generating") refreshMsg(t);
-  }
+}
+/* Translations are checked against English, so any change re-checks all three. */
+const refreshAll = (aud) => LANGS.forEach((l) => refreshMsg(msgOf(aud, l)));
+
+/* Back to an undecided draft: used whenever the text of a message changes. */
+function resetDecision(m, reason) {
+  if (m.status === "approved") log("System", "Approval withdrawn", { key: key(m.aud, m.lang), detail: reason });
+  Object.assign(m, { status: "draft", approvedText: null, approvedAt: null, approvedBy: null, readMs: 0, acks: {},
+    aiScore: null, aiIssues: [], review: aiReady() ? "pending" : "off" });
 }
 
 function gate(m) {
   if (m.status !== "draft") return { ok: false, why: "" };
-  if (S.edits[key(m.aud, m.lang)]) return { ok: false, why: "Save or cancel your edit first." };
+  if (S.edit && S.edit.aud === m.aud) return { ok: false, why: "Save or cancel your edit first." };
   if (m.flags.some((f) => f.blocking)) return { ok: false, why: "Fix the issue above first." };
   if (m.review === "pending") return { ok: false, why: "Waiting for the AI review." };
   if (m.readMs < needMs(m)) return { ok: false, why: "Read the message to unlock Approve." };
@@ -695,26 +850,52 @@ function gate(m) {
 }
 
 /* =====================================================================
-   Drafting: rule-based (always available) and Tile AI
+   Drafting and translation: rule-based (always available) and Tile AI
    ===================================================================== */
 const aiReady = () => S.ai.state === "ready" && !EDIT_MODE;
+const live = (aud, seq) => !!S.aud[aud] && S.aud[aud].seq === seq;
+/* seen: the record wording each source item had when the point was written,
+   so a later record update can tell which edited points it touches. */
+const seenOf = (src) => Object.fromEntries(src.map((id) => [id, itemById(id)?.text ?? null]));
+const point = (id, section, src, lang, text) => ({ id, section, src, lang0: lang, text: { [lang]: text }, raw: {}, seen: seenOf(src), edited: false });
 
 function ruleDraft(aud) {
-  const s = emptySections();
-  for (const it of itemsFor(aud)) s[it.section].push({ text: it.text, src: [it.id] });
-  return s;
+  return itemsFor(aud).map((it) => point(it.id, it.section, [it.id], "en", it.text));
 }
 
-function demoTranslate(en, lang) {
-  let missing = 0;
-  const s = emptySections();
-  for (const sec of SECTIONS) for (const b of en.sections[sec]) {
-    const it = b.src.length === 1 ? itemById(b.src[0]) : null;
-    const ok = it && it.trFor === it.text && b.text === it.text && it.tr[lang];
-    if (!ok) missing++;
-    s[sec].push({ text: ok ? it.tr[lang] : "", src: [...b.src] });
+/* If only numbers, times or codes changed in the edited language, make the
+   same swap in the other language. Any other wording change needs a real
+   translation, so this returns null and the caller marks the point. */
+function swapTokens(oldFrom, newFrom, oldTo) {
+  const mask = (s) => s.replace(TOKEN_RE, "\u0000");
+  if (mask(oldFrom) !== mask(newFrom)) return null;
+  const a = oldFrom.match(TOKEN_RE) || [], b = newFrom.match(TOKEN_RE) || [];
+  const map = new Map(), same = new Set();
+  a.forEach((t, i) => { if (t === b[i]) same.add(t); else if (map.has(t) && map.get(t) !== b[i]) map.set(t, null); else map.set(t, b[i]); });
+  const present = factTokens(oldTo);
+  for (const [t, v] of map) if (v == null || same.has(t) || !present.has(t)) return null;
+  return oldTo.replace(TOKEN_RE, (t) => map.has(t) ? map.get(t) : t);
+}
+
+/* Translation without AI, in order of trust: the bundled reference wording
+   of the record item, a number/code swap on the previous translation, or a
+   visible placeholder. New wording needs a real LLM (implementation phase). */
+const PLACEHOLDER = {
+  en: "Real LLM required → implementation phase",
+  de: "Echtes LLM erforderlich → Umsetzungsphase",
+  fr: "LLM réel requis → phase de mise en œuvre"
+};
+function demoTranslatePoint(p, from, to, before) {
+  const src = p.text[from];
+  if (p.src.length === 1) {
+    const it = itemById(p.src[0]);
+    if (it && refText(it, from) === src && refText(it, to)) return { text: refText(it, to), how: "reference" };
   }
-  return { sections: s, missing };
+  if (before && before.text[from] != null && before.text[to] && !before.raw[to]) {
+    const swapped = swapTokens(before.text[from], src, before.text[to]);
+    if (swapped != null) return { text: swapped, how: "swap" };
+  }
+  return { text: PLACEHOLDER[to], how: "raw" };
 }
 
 function withTimeout(promise, ms) {
@@ -761,6 +942,7 @@ async function aiObject(prompt, schema) {
 
 const arr = (item) => ({ type: "array", items: item });
 const obj = (props) => ({ type: "object", properties: props, required: Object.keys(props), additionalProperties: false });
+const LANG_TARGET = { en: "British English", de: "Swiss Standard German (write ss, never ß)", fr: "French as used in Switzerland" };
 
 async function aiDraft(aud) {
   const items = itemsFor(aud);
@@ -780,45 +962,41 @@ async function aiDraft(aud) {
     ...items.map((i) => `${i.id} | ${i.section} | ${i.text}`)
   ].join("\n");
   const o = await aiObject(prompt, schema);
-  const s = emptySections();
+  const pts = [];
   for (const sec of SECTIONS) {
     if (!Array.isArray(o[sec])) throw new Error(`the AI draft has no "${sec}" section`);
     for (const b of o[sec]) {
       if (!b || typeof b.text !== "string" || !b.text.trim()) continue;
-      s[sec].push({ text: b.text.trim(), src: Array.isArray(b.sources) ? b.sources.filter((x) => typeof x === "string").map((x) => x.trim()) : [] });
+      const src = Array.isArray(b.sources) ? b.sources.filter((x) => typeof x === "string").map((x) => x.trim()) : [];
+      pts.push(point("P" + (pts.length + 1), sec, src, "en", b.text.trim()));
     }
   }
-  if (!SECTIONS.some((sec) => s[sec].length)) throw new Error("the AI draft is empty");
-  return s;
+  if (!pts.length) throw new Error("the AI draft is empty");
+  return pts;
 }
 
-async function aiTranslate(en, lang) {
-  const schema = obj(Object.fromEntries(SECTIONS.map((s) => [s, arr({ type: "string" })])));
-  const src = Object.fromEntries(SECTIONS.map((s) => [s, en.sections[s].map((b) => b.text)]));
+async function aiTranslateTexts(texts, from, to) {
   const prompt = [
-    `Translate this air traffic control stakeholder message from English into ${lang === "de" ? "Swiss Standard German (write ss, never ß)" : "French as used in Switzerland"}.`,
+    `Translate each point of this air traffic control stakeholder message from ${LANG_NAME[from]} into ${LANG_TARGET[to]}.`,
     "Rules:",
-    "- Keep the same sections and exactly the same number of bullets in the same order.",
+    "- Return exactly one translation per point, in the same order.",
     "- Keep all numbers, times, UTC, sector names, node names and upper-case system names exactly as written.",
-    "- Do not add, drop or soften any information. Keep it as short as the English.",
+    "- Do not add, drop or soften any information. Keep it as short as the source.",
     "",
-    "Message (JSON):",
-    JSON.stringify(src)
+    "Points (JSON array):",
+    JSON.stringify(texts)
   ].join("\n");
-  const o = await aiObject(prompt, schema);
-  const s = emptySections();
-  for (const sec of SECTIONS) {
-    const out = Array.isArray(o[sec]) ? o[sec] : [];
-    if (out.length !== en.sections[sec].length) throw new Error(`the ${LANG_NAME[lang]} translation changed the number of points in "${sec}"`);
-    en.sections[sec].forEach((b, i) => s[sec].push({ text: String(out[i] || "").trim(), src: [...b.src] }));
-  }
-  return s;
+  const o = await aiObject(prompt, obj({ points: arr({ type: "string" }) }));
+  if (!Array.isArray(o.points) || o.points.length !== texts.length) throw new Error(`the ${LANG_NAME[to]} translation changed the number of points`);
+  const out = o.points.map((x) => typeof x === "string" ? x.trim() : "");
+  if (out.some((x) => !x)) throw new Error(`the ${LANG_NAME[to]} translation has empty points`);
+  return out;
 }
 
 async function aiReview(aud, langs) {
   const R = obj({ score: { type: "number" }, issues: arr(obj({ section: { type: "string", enum: SECTIONS }, index: { type: "integer" }, problem: { type: "string" } })) });
   const schema = obj(Object.fromEntries(langs.map((l) => [l, R])));
-  const show = (l) => JSON.stringify(Object.fromEntries(SECTIONS.map((s) => [s, S.msgs[key(aud, l)].sections[s].map((b) => b.text)])));
+  const show = (l) => JSON.stringify(Object.fromEntries(SECTIONS.map((s) => [s, ptsIn(aud, s).map((p) => p.text[l])])));
   const prompt = [
     "You are a strict reviewer of stakeholder messages for an air traffic control incident. Score each message from 0 to 100.",
     "- \"en\" (information retrieval accuracy): 100 means every statement is supported by the record items and nothing relevant is missing. Lower it for any unsupported, changed or missing fact.",
@@ -836,128 +1014,120 @@ async function aiReview(aud, langs) {
 
 async function generateAudience(aud) {
   const seq = ++GEN;
-  S.seq[aud] = seq;
-  for (const l of LANGS) {
-    const k = key(aud, l), old = S.msgs[k];
-    if (old && old.status === "approved") log("System", "Approval withdrawn", { key: k, hash: old.approvedHash, detail: `record rev ${S.rec.revision} changed this audience's content` });
-    S.msgs[k] = newMsg(aud, l, old);
-    delete S.edits[k];
-  }
-  delete S.sim[aud]; delete S.simState[aud];
-  S.view[aud] = "en";
+  const prev = S.aud[aud];
+  if (prev) for (const l of LANGS) if (prev.msgs[l].status === "approved")
+    log("System", "Approval withdrawn", { key: key(aud, l), detail: `record revision ${S.rec.revision} changed this audience's content` });
+  /* src: the language the SMC last authored in (English until someone edits).
+     pending: edited points whose translation has not landed yet. */
+  const A = S.aud[aud] = { seq, tgen: 0, nextN: 0, points: [], src: "en", pending: new Map(), msgs: Object.fromEntries(LANGS.map((l) => [l, newMsg(aud, l, prev && prev.msgs[l])])) };
+  if (S.edit && S.edit.aud === aud) S.edit = null;
   render();
 
-  const en = S.msgs[key(aud, "en")];
-  let draft = null, origin = "rule", note = "";
+  let pts = null, origin = "rule", note = "";
   if (aiReady()) {
-    try { draft = await aiDraft(aud); origin = "ai"; }
+    try { pts = await aiDraft(aud); origin = "ai"; }
     catch (e) { note = `AI draft failed (${aiErrorText(e)}). Showing the rule-based draft.`; log("System", "AI draft failed", { key: key(aud, "en"), detail: aiErrorText(e) }); }
   }
-  if (seq !== S.seq[aud]) return;
-  if (!draft) { draft = ruleDraft(aud); origin = "rule"; }
-  Object.assign(en, { sections: draft, origin, note, status: "draft", review: aiReady() ? "pending" : "off" });
-  refreshMsg(en);
-  log(origin === "ai" ? "AI" : "System", "English draft created", { key: key(aud, "en"), hash: en.hash, detail: `${origin === "ai" ? "Tile AI" : "rule-based"}, from record rev ${en.rev}` });
+  if (!live(aud, seq)) return;
+  A.points = pts || ruleDraft(aud);
+  Object.assign(A.msgs.en, { status: "draft", origin, note, review: aiReady() ? "pending" : "off" });
+  refreshMsg(A.msgs.en);
+  log(origin === "ai" ? "AI" : "System", "English draft created", { key: key(aud, "en"), detail: `${origin === "ai" ? "Tile AI" : "rule-based"}, from record revision ${A.msgs.en.rev}` });
   render();
 
-  await Promise.all(["de", "fr"].map((l) => translateInto(aud, l, seq)));
-  if (seq !== S.seq[aud]) return;
-  await afterDrafts(aud, seq);
+  await translatePoints(aud, "en", ["de", "fr"], A.points.map((p) => ({ p, before: null })), seq);
+  if (live(aud, seq)) await reviewAudience(aud, seq);
 }
 
-/* AI review, then semantic similarity. Both are skipped without Tile AI. */
-async function afterDrafts(aud, seq) {
-  if (!aiReady() || seq !== S.seq[aud]) return;
-  await reviewAudience(aud, seq);
-  if (seq === S.seq[aud]) await computeSimilarity(aud, seq);
+/* A record update keeps the SMC's edits. Unedited points follow the record;
+   edited and added points stay as written (a note flags any whose source
+   changed). Approvals are withdrawn because the content changed. */
+async function rebaseAudience(aud) {
+  const A = S.aud[aud];
+  if (!A || !A.points.some((p) => p.edited) || LANGS.some((l) => A.msgs[l].status === "generating")) { generateAudience(aud); return; }
+  const items = itemsFor(aud), byId = new Map(items.map((i) => [i.id, i]));
+  const unchanged = (p) => p.src.every((id) => byId.has(id) && byId.get(id).text === p.seen[id]);
+  const next = [], fresh = [];
+  const fromRecord = (it) => { const q = point(`${it.id}.r${S.rec.revision}`, it.section, [it.id], "en", it.text); next.push(q); fresh.push(q); };
+  for (const p of A.points) {
+    if (p.edited || !p.src.length || unchanged(p)) { next.push(p); continue; }
+    /* Unedited point whose source changed or went away: take the new wording. */
+    for (const id of p.src) if (byId.has(id) && !next.some((q) => q.src.includes(id))) fromRecord(byId.get(id));
+  }
+  for (const it of items) if (!next.some((q) => q.src.includes(it.id))) fromRecord(it);
+  A.points = next;
+  for (const l of LANGS) {
+    resetDecision(A.msgs[l], `record revision ${S.rec.revision} changed this audience's content`);
+    Object.assign(A.msgs[l], { rev: S.rec.revision, basis: basisOf(aud) });
+  }
+  log("System", "Message updated from record", { key: key(aud, "en"), detail: `revision ${S.rec.revision}: ${plural(fresh.length, "point", "points")} from the record, SMC edits kept` });
+  if (fresh.length) await translatePoints(aud, "en", ["de", "fr"], fresh.map((p) => ({ p, before: null })), A.seq, true);
+  else { refreshAll(aud); render(); }
+  if (live(aud, A.seq)) reviewAudience(aud, A.seq);
 }
 
-async function translateInto(aud, lang, seq) {
-  const en = S.msgs[key(aud, "en")], m = S.msgs[key(aud, lang)];
-  m.status = "generating"; m.note = "";
+/* Fill the target languages for the changed points, from `from`.
+   Returns a summary for the pop-up, or null if superseded. */
+async function translatePoints(aud, from, targets, changes, seq, keepOrigin = false) {
+  const A = S.aud[aud], tg = ++A.tgen;
+  /* Withdraw first, so the log shows which approvals the change cost. */
+  targets.forEach((l) => { resetDecision(A.msgs[l], `the ${LANG_NAME[from]} text changed`); A.msgs[l].status = "generating"; });
   render();
-  let secs = null, origin = "demo", note = "";
-  if (aiReady()) {
-    try { secs = await aiTranslate(en, lang); origin = "ai"; }
-    catch (e) { note = `AI translation failed (${aiErrorText(e)}).`; log("System", "AI translation failed", { key: key(aud, lang), detail: aiErrorText(e) }); }
+  const results = await Promise.all(targets.map(async (to) => {
+    if (!aiReady() || !changes.length) return { to, texts: null, note: "" };
+    try { return { to, texts: await aiTranslateTexts(changes.map((c) => c.p.text[from]), from, to), note: "" }; }
+    catch (e) {
+      log("System", "AI translation failed", { key: key(aud, to), detail: aiErrorText(e) });
+      return { to, texts: null, note: `AI translation failed (${aiErrorText(e)}).` };
+    }
+  }));
+  if (!live(aud, seq) || A.tgen !== tg) return null;
+  const sum = { ai: 0, reference: 0, swap: 0, raw: new Set() };
+  const initial = from === "en" && changes.every((c) => !c.before);
+  for (const r of results) {
+    changes.forEach((c, i) => {
+      let text, how;
+      if (r.texts) { text = r.texts[i]; how = "ai"; }
+      else ({ text, how } = demoTranslatePoint(c.p, from, r.to, c.before));
+      c.p.text[r.to] = text;
+      c.p.raw[r.to] = how === "raw";
+      if (how === "raw") sum.raw.add(c.p.id); else sum[how]++;
+    });
+    const m = A.msgs[r.to];
+    const origin = keepOrigin ? m.origin : r.texts ? "ai" : initial ? "demo" : "carried";
+    Object.assign(m, { status: "draft", origin, from, note: r.note, readMs: 0, acks: {}, aiScore: null, aiIssues: [], review: aiReady() ? "pending" : "off" });
+    log(r.texts ? "AI" : "System", initial ? `${LANG_NAME[r.to]} translation created` : `${LANG_NAME[r.to]} updated from ${LANG_NAME[from]}`,
+      { key: key(aud, r.to), detail: r.texts ? "Tile AI" : initial ? "reference translation (Tile AI off)" : "rule-based: reference wording or number swap" });
   }
-  if (seq !== S.seq[aud] || S.msgs[key(aud, lang)] !== m) return;
-  if (!secs) {
-    const d = demoTranslate(en, lang);
-    secs = d.sections;
-    if (d.missing) note += ` ${d.missing} point(s) have no reference translation. Choose Edit to write them.`;
-  }
-  Object.assign(m, { sections: secs, origin, note: note.trim(), status: "draft", enHash: en.hash, readMs: 0, acks: {},
-    aiScore: null, aiIssues: [], review: aiReady() ? "pending" : "off" });
-  refreshMsg(m);
-  log(origin === "ai" ? "AI" : "System", `${LANG_NAME[lang]} translation created`, { key: key(aud, lang), hash: m.hash, detail: origin === "ai" ? "Tile AI" : "reference translation (demo)" });
+  refreshAll(aud);
   render();
+  return sum;
 }
 
 async function reviewAudience(aud, seq) {
-  const langs = LANGS.filter((l) => { const m = S.msgs[key(aud, l)]; return m && m.status === "draft" && bullets(m).some((x) => x.b.text.trim()); });
+  if (!aiReady() || !live(aud, seq)) return;
+  const A = S.aud[aud];
+  const langs = LANGS.filter((l) => A.msgs[l].status === "draft" && A.points.some((p) => (p.text[l] || "").trim()));
   if (!langs.length) return;
-  const hashes = Object.fromEntries(langs.map((l) => [l, S.msgs[key(aud, l)].hash]));
-  langs.forEach((l) => { S.msgs[key(aud, l)].review = "pending"; });
-  S.review[aud] = "running";
+  const texts = Object.fromEntries(langs.map((l) => [l, canonical(aud, l)]));
+  langs.forEach((l) => { A.msgs[l].review = "pending"; });
   render();
   try {
     const r = await aiReview(aud, langs);
-    if (seq !== S.seq[aud]) return;
+    if (!live(aud, seq)) return;
     for (const l of langs) {
-      const m = S.msgs[key(aud, l)], x = r[l];
-      if (!m || m.hash !== hashes[l]) continue;
+      const m = A.msgs[l], x = r[l];
+      if (canonical(aud, l) !== texts[l]) continue; // text changed while the review ran
       m.aiScore = x && typeof x.score === "number" ? Math.round(clamp(x.score, 0, 100)) : null;
-      m.aiIssues = x && Array.isArray(x.issues) ? x.issues.filter((i) => i && typeof i.problem === "string").slice(0, 6) : [];
+      m.aiIssues = x && Array.isArray(x.issues) ? x.issues.filter((i) => i && typeof i.problem === "string" && SECTIONS.includes(i.section) && Number.isInteger(i.index)).slice(0, 6) : [];
       m.review = m.aiScore == null ? "failed" : "done";
       refreshMsg(m);
-      log("AI", "Reviewed", { key: key(aud, l), hash: m.hash, detail: m.aiScore == null ? "no score returned" : `accuracy ${m.aiScore}%, ${m.aiIssues.length} issue(s)` });
+      log("AI", "Reviewed", { key: key(aud, l), detail: m.aiScore == null ? "no score returned" : `accuracy ${m.aiScore}%, ${plural(m.aiIssues.length, "issue", "issues")}` });
     }
-    S.review[aud] = "done";
   } catch (e) {
-    if (seq !== S.seq[aud]) return;
-    S.review[aud] = "failed: " + aiErrorText(e);
-    for (const l of langs) { const m = S.msgs[key(aud, l)]; if (m.hash === hashes[l]) { m.review = "failed"; refreshMsg(m); } }
+    if (!live(aud, seq)) return;
+    for (const l of langs) { const m = A.msgs[l]; if (canonical(aud, l) === texts[l]) { m.review = "failed"; refreshMsg(m); } }
     log("System", "AI review failed", { detail: `${AUD[aud].label}: ${aiErrorText(e)}` });
-  }
-  render();
-}
-
-/* Cross-lingual embeddings: cosine of each English point with its translation. */
-async function computeSimilarity(aud, seq) {
-  const ms = LANGS.map((l) => S.msgs[key(aud, l)]);
-  if (ms.some((m) => !m || m.status === "generating")) return;
-  const labels = bullets(ms[0]).map((x) => x.b.src[0] || `${x.s[0].toUpperCase()}${x.i + 1}`);
-  const texts = ms.map((m) => bullets(m).map((x) => x.b.text || "(empty)"));
-  const input = texts.flat();
-  if (!input.length || input.length > 96) { S.simState[aud] = "too many points to compare"; render(); return; }
-  const hashes = ms.map((m) => m.hash);
-  S.simState[aud] = "running"; render();
-  try {
-    const r = await withTimeout(tile.ai.embed({ input }), 45000);
-    meter(r);
-    if (seq !== S.seq[aud]) return;
-    if (!r || !Array.isArray(r.embeddings) || r.embeddings.length !== input.length) throw new Error("unexpected embedding result");
-    const cut = [0, texts[0].length, texts[0].length + texts[1].length, input.length];
-    const vecs = [0, 1, 2].map((i) => r.embeddings.slice(cut[i], cut[i + 1]));
-    const cos = (a, b) => { let d = 0, x = 0, y = 0; for (let i = 0; i < a.length; i++) { d += a[i] * b[i]; x += a[i] * a[i]; y += b[i] * b[i]; } return d / (Math.sqrt(x * y) || 1); };
-    const mat = (j) => vecs[0].map((a) => vecs[j].map((b) => cos(a, b)));
-    const diag = (M) => { const n = Math.min(M.length, M[0]?.length || 0); let s = 0; for (let i = 0; i < n; i++) s += M[i][i]; return n ? s / n : 0; };
-    const de = mat(1), fr = mat(2);
-    /* Centre each language on its own mean first: cross-lingual embeddings carry a
-       per-language offset that would otherwise dominate the projection. */
-    const centred = vecs.map((V) => {
-      const mu = V[0].map((_, j) => V.reduce((s, v) => s + v[j], 0) / V.length);
-      return V.map((v) => v.map((x, j) => x - mu[j]));
-    });
-    const flat = pca2(centred.flat());
-    const xy = { en: flat.slice(cut[0], cut[1]), de: flat.slice(cut[1], cut[2]), fr: flat.slice(cut[2], cut[3]) };
-    S.sim[aud] = { at: nowUtc(true), labels, texts, hashes, xy, de: { M: de, mean: diag(de) }, fr: { M: fr, mean: diag(fr) } };
-    S.simState[aud] = "done";
-    log("AI", "Similarity computed", { detail: `${AUD[aud].label}: EN→DE ${diag(de).toFixed(2)}, EN→FR ${diag(fr).toFixed(2)}` });
-  } catch (e) {
-    if (seq !== S.seq[aud]) return;
-    S.simState[aud] = aiErrorText(e);
   }
   render();
 }
@@ -965,98 +1135,264 @@ async function computeSimilarity(aud, seq) {
 /* =====================================================================
    SMC decisions
    ===================================================================== */
-function approve(k) {
-  const m = S.msgs[k];
-  if (!gate(m).ok || EDIT_MODE) return;
-  m.status = "approved"; m.approvedHash = m.hash; m.approvedAt = nowUtc(true);
-  log("SMC", "Approved", { key: k, hash: m.hash, detail: `read ${Math.round(m.readMs / 100) / 10} s, ${Object.keys(m.acks).length} note(s) confirmed` });
-  /* Move on to the next language that still needs a decision. */
-  const next = LANGS.find((l) => neededLangs(m.aud).includes(l) && S.msgs[key(m.aud, l)]?.status === "draft");
-  if (next) S.view[m.aud] = next;
+function approve(aud, lang) {
+  const m = msgOf(aud, lang);
+  if (!m || !gate(m).ok || EDIT_MODE) return;
+  Object.assign(m, { status: "approved", approvedText: canonical(aud, lang), approvedAt: nowUtc(), approvedBy: S.user.name });
+  log("SMC", "Approved", { key: key(aud, lang), detail: `read ${Math.round(m.readMs / 100) / 10} s, ${plural(Object.keys(m.acks).length, "note", "notes")} confirmed` });
   render();
 }
-function withdraw(k) {
-  const m = S.msgs[k];
-  m.status = "draft"; m.approvedHash = null; m.approvedAt = null;
-  log("SMC", "Approval withdrawn", { key: k, hash: m.hash });
+function withdraw(aud, lang) {
+  const m = msgOf(aud, lang);
+  Object.assign(m, { status: "draft", approvedText: null, approvedAt: null, approvedBy: null });
+  log("SMC", "Approval withdrawn", { key: key(aud, lang) });
   render();
 }
-function reject(k) {
-  S.msgs[k].status = "rejected";
-  log("SMC", "Rejected", { key: k, hash: S.msgs[k].hash });
+function reject(aud, lang) {
+  msgOf(aud, lang).status = "rejected";
+  log("SMC", "Rejected", { key: key(aud, lang) });
   render();
 }
-function redraft(k) {
-  const m = S.msgs[k];
-  log("SMC", "Redraft requested", { key: k });
-  if (m.lang === "en") generateAudience(m.aud);
-  else retranslate(m.aud, m.lang);
+function redraft(aud) {
+  if (EDIT_MODE) return;
+  log("SMC", "Redraft requested", { key: key(aud, S.user.lang), detail: "all languages, from the record" });
+  generateAudience(aud);
 }
-async function retranslate(aud, lang) {
-  const seq = S.seq[aud];
-  delete S.edits[key(aud, lang)];
-  await translateInto(aud, lang, seq);
-  await afterDrafts(aud, seq);
-}
-function startEdit(k) {
-  const m = S.msgs[k];
-  S.edits[k] = Object.fromEntries(SECTIONS.map((s) => [s, m.sections[s].map((b) => b.text)]));
+/* The SMC edits in their own language only: that text is what matters,
+   and the other two languages follow it. */
+function startEdit(aud) {
+  if (EDIT_MODE) return;
+  const lang = S.user.lang;
+  S.edit = { aud, lang, secs: Object.fromEntries(SECTIONS.map((s) => [s, ptsIn(aud, s).map((p) => ({ pid: p.id, text: p.text[lang] || "" }))])) };
+  S.kpi = null;
+  const first = SECTIONS.find((s) => S.edit.secs[s].length);
+  if (first) S.focusNext = `edit:${aud}:${first}:0`;
   render();
 }
-function saveEdit(k) {
-  const m = S.msgs[k], d = S.edits[k];
-  const before = m.hash;
-  SECTIONS.forEach((s) => m.sections[s].forEach((b, i) => { b.text = (d[s][i] || "").trim(); }));
-  delete S.edits[k];
-  if (m.lang !== "en") m.enHash = S.msgs[key(m.aud, "en")].hash; // the SMC takes responsibility for matching the current English
-  Object.assign(m, { origin: "edited", status: "draft", readMs: 0, acks: {}, aiScore: null, aiIssues: [], review: aiReady() ? "pending" : "off" });
-  refreshMsg(m);
-  log("SMC", "Edited", { key: k, hash: m.hash, detail: `before ${shortHash(before)}` });
+function cancelEdit() { S.edit = null; render(); }
+function addPoint(s) {
+  const rows = S.edit.secs[s];
+  rows.push({ pid: null, text: "" });
+  S.focusNext = `edit:${S.edit.aud}:${s}:${rows.length - 1}`;
   render();
-  afterDrafts(m.aud, S.seq[m.aud]);
 }
+
+/* Save the SMC's edit, then bring the other two languages in line with it.
+   An emptied point is removed from every language. */
+async function saveEdit() {
+  const E = S.edit;
+  if (EDIT_MODE || !E) return;
+  const A = S.aud[E.aud], L = E.lang;
+  const old = new Map(A.points.map((p) => [p.id, p]));
+  const next = [], changes = [];
+  let added = 0;
+  for (const s of SECTIONS) for (const row of E.secs[s]) {
+    const t = row.text.replace(/\s+/g, " ").trim();
+    if (!t) continue;
+    if (row.pid && old.has(row.pid)) {
+      const p = old.get(row.pid);
+      if (p.text[L] !== t) {
+        const before = { text: { ...p.text }, raw: { ...p.raw } };
+        p.text[L] = t; p.raw[L] = false; p.lang0 = L; p.edited = true;
+        changes.push({ p, before });
+      }
+      next.push(p);
+    } else {
+      const p = point("N" + (++A.nextN), s, [], L, t);
+      p.edited = true;
+      changes.push({ p, before: null }); next.push(p); added++;
+    }
+  }
+  const removed = A.points.filter((p) => !next.includes(p)).length;
+  S.edit = null;
+  if (!changes.length && !removed) { render(); showToast("No changes to save.", "info"); return; }
+  A.points = next;
+  /* The SMC has just reviewed the whole message against the current record. */
+  next.forEach((p) => { p.seen = seenOf(p.src); });
+  A.src = L;
+  const m = A.msgs[L];
+  resetDecision(m, "edited by the SMC");
+  Object.assign(m, { origin: "edited", from: L, note: "" });
+  /* A newer edit supersedes a translation still running, so carry its points along. */
+  for (const c of changes) if (!A.pending.has(c.p.id)) A.pending.set(c.p.id, c);
+  const todo = [...A.pending.values()].filter((c) => A.points.includes(c.p));
+  log("SMC", "Edited", { key: key(E.aud, L), detail: [`${plural(changes.length - added, "point", "points")} changed`, `${added} added`, `${removed} removed`].join(", ") });
+  const others = LANGS.filter((l) => l !== L);
+  if (aiReady() && changes.length) showToast(`Translating your edit into ${others.map((l) => LANG_NAME[l]).join(" and ")}…`, "info");
+  const sum = await translatePoints(E.aud, L, others, todo, A.seq);
+  if (!sum) return;
+  A.pending.clear();
+  const names = others.map((l) => LANG_NAME[l]).join(" and ");
+  const raw = sum.raw.size;
+  if (raw) showToast(`${names} messages updated. ${plural(raw, "point", "points")} with new wording ${raw === 1 ? "shows" : "show"} a placeholder in each language until a real LLM translates ${raw === 1 ? "it" : "them"} (implementation phase).`, "warn");
+  else showToast(`${names} messages updated to match your edit.`, "info");
+  reviewAudience(E.aud, A.seq);
+}
+
 function toggleRecipient(id, on) {
+  if (EDIT_MODE) return;
   if (on) S.unselected.delete(id); else S.unselected.add(id);
   const p = DIRECTORY.find((x) => x.id === id);
-  log("SMC", on ? "Recipient included" : "Recipient excluded", { detail: `${p.name} (${p.role}, ${p.lang.toUpperCase()})` });
+  log("SMC", on ? "Recipient included" : "Recipient excluded", { detail: `${p.name} (${AUD[p.aud].short}, ${p.lang.toUpperCase()}, ${p.channel})` });
   render();
+}
+function toggleGroup(aud, on) {
+  if (EDIT_MODE) return;
+  DIRECTORY.filter((p) => p.aud === aud).forEach((p) => { if (on) S.unselected.delete(p.id); else S.unselected.add(p.id); });
+  log("SMC", on ? "Group included" : "Group excluded", { detail: AUD[aud].label });
+  render();
+}
+
+/* =====================================================================
+   Managing stakeholders. Changes last for this session only: the
+   organisation directory is fictional and nothing is stored.
+   ===================================================================== */
+const fold = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const SUG = { q: "", items: [], taken: [], active: -1 };
+
+function searchOrg(q) {
+  const t = fold(q.trim());
+  const inDir = new Set(DIRECTORY.map((p) => p.id));
+  const hits = t ? ORG.filter((p) => fold(p.name).includes(t))
+    .sort((a, b) => AUD_ORDER.indexOf(a.aud) - AUD_ORDER.indexOf(b.aud) || a.name.localeCompare(b.name)) : [];
+  Object.assign(SUG, { q, items: hits.filter((p) => !inDir.has(p.id)).slice(0, 8), taken: hits.filter((p) => inDir.has(p.id)), active: -1 });
+  renderSuggest();
+}
+function renderSuggest() {
+  const input = $("orgsearch"), ul = $("orgsuggest");
+  const open = !!SUG.q.trim();
+  ul.hidden = !open;
+  input.setAttribute("aria-expanded", String(open));
+  input.removeAttribute("aria-activedescendant");
+  if (!open) { ul.replaceChildren(); return; }
+  if (!SUG.items.length) {
+    ul.replaceChildren(h("li", { class: "empty", role: "option", "aria-disabled": "true" }, SUG.taken.length
+      ? `Already a stakeholder: ${SUG.taken.map((p) => p.name).join(", ")}.`
+      : `No one in the organisation matches "${SUG.q.trim()}".`));
+    return;
+  }
+  ul.replaceChildren(...SUG.items.map((p, i) => h("li", { role: "option", id: "sg-" + p.id, "aria-selected": String(i === SUG.active),
+      onmousedown: (e) => e.preventDefault(), onclick: () => addStakeholder(p) },
+    h("span", { class: "sn" }, p.name),
+    h("span", { class: "sg" }, AUD[p.aud].label),
+    h("span", { class: "sd" }, `${LANG_NAME[p.lang]} · ${p.channel} · ${p.role}`))));
+  if (SUG.active >= 0) {
+    input.setAttribute("aria-activedescendant", "sg-" + SUG.items[SUG.active].id);
+    $("sg-" + SUG.items[SUG.active].id)?.scrollIntoView({ block: "nearest" });
+  }
+}
+function onSearchKey(e) {
+  const n = SUG.items.length;
+  if (e.key === "ArrowDown" && n) { e.preventDefault(); SUG.active = (SUG.active + 1) % n; renderSuggest(); }
+  else if (e.key === "ArrowUp" && n) { e.preventDefault(); SUG.active = (SUG.active - 1 + n) % n; renderSuggest(); }
+  else if (e.key === "Enter" && n) { e.preventDefault(); addStakeholder(SUG.items[Math.max(SUG.active, 0)]); }
+  else if (e.key === "Escape") { e.preventDefault(); $("orgsearch").value = ""; searchOrg(""); }
+}
+
+/* Group, language, channel and role come from the organisation directory. */
+function addStakeholder(p) {
+  if (EDIT_MODE || DIRECTORY.some((x) => x.id === p.id)) return;
+  DIRECTORY.push({ ...p });
+  S.unselected.delete(p.id);
+  log("SMC", "Stakeholder added", { detail: `${p.name} to ${AUD[p.aud].label} (${p.lang.toUpperCase()}, ${p.channel})` });
+  $("orgsearch").value = "";
+  searchOrg("");
+  showToast(`${p.name} added to ${AUD[p.aud].label} · ${LANG_NAME[p.lang]} · ${p.channel}.`, "info");
+  render();
+  $("orgsearch").focus();
+}
+function removeStakeholder(id) {
+  if (EDIT_MODE) return;
+  const i = DIRECTORY.findIndex((x) => x.id === id);
+  if (i < 0) return;
+  const [p] = DIRECTORY.splice(i, 1);
+  S.unselected.delete(id);
+  log("SMC", "Stakeholder removed", { detail: `${p.name} from ${AUD[p.aud].label}` });
+  showToast(`${p.name} removed from ${AUD[p.aud].label}. Search the name to add them back.`, "info");
+  /* Keep keyboard focus in the list: move to the next Remove button. */
+  const nextP = DIRECTORY.filter((x) => x.aud === p.aud)[0];
+  S.focusNext = nextP ? `rm:${nextP.id}` : null;
+  render();
+}
+
+function renderManage() {
+  const body = [];
+  for (const aud of AUD_ORDER) {
+    const people = DIRECTORY.filter((p) => p.aud === aud);
+    body.push(h("tr", { class: "gr g-" + aud },
+      h("th", { scope: "colgroup", colspan: "5" }, AUD[aud].label, h("span", { class: "gmeta" }, plural(people.length, "stakeholder", "stakeholders")))));
+    if (!people.length) body.push(h("tr", { class: "none" }, h("td", { colspan: "5" }, "No stakeholders in this group. Search above to add one.")));
+    for (const p of people) body.push(h("tr", null,
+      h("td", { class: "nm" }, p.name, h("span", { class: "rsub" }, p.role)),
+      h("td", null, LANG_NAME[p.lang]),
+      h("td", null, p.channel),
+      h("td", { class: "role" }, p.role),
+      h("td", { class: "act" }, h("button", { class: "btn ghost", type: "button", "data-fid": `rm:${p.id}`, disabled: EDIT_MODE,
+        "aria-label": `Remove ${p.name} from ${AUD[aud].label}`, onclick: () => removeStakeholder(p.id) }, "Remove"))));
+  }
+  $("managebody").replaceChildren(h("table", { class: "rtable" },
+    h("thead", null, h("tr", null, ["Name", "Language", "Preferred communication channel"].map((x) => h("th", { scope: "col" }, x)),
+      h("th", { scope: "col", class: "role" }, "Role"), h("th", { scope: "col" }, h("span", { class: "visually-hidden" }, "Action")))),
+    h("tbody", null, body)));
+}
+
+function openManage() {
+  S.view = "manage"; S.kpi = null;
+  closeReview();
+  $("main").hidden = true; $("manage").hidden = false;
+  window.scrollTo(0, 0);
+  render();
+  $("orgsearch").focus();
+}
+function closeManage() {
+  S.view = "messages";
+  $("orgsearch").value = ""; searchOrg("");
+  $("manage").hidden = true; $("main").hidden = false;
+  render();
+  $("managebtn").focus();
+}
+function gearIcon() {
+  return sv("svg", { viewBox: "0 0 24 24", "aria-hidden": "true" },
+    sv("circle", { cx: "12", cy: "12", r: "7.2", fill: "none", stroke: "currentColor", "stroke-width": "3.2", "stroke-dasharray": "2.83 2.83" }),
+    sv("circle", { cx: "12", cy: "12", r: "5.4", fill: "none", stroke: "currentColor", "stroke-width": "1.6" }),
+    sv("circle", { cx: "12", cy: "12", r: "2", fill: "none", stroke: "currentColor", "stroke-width": "1.6" }));
 }
 
 function sendState(aud) {
   const total = LANGS.reduce((n, l) => n + recipients(aud, l).length, 0);
   if (!total) return { ok: false, why: "No recipients selected" };
-  const msgs = neededLangs(aud).map((l) => S.msgs[key(aud, l)]);
-  if (msgs.some((m) => !m || m.status === "generating")) return { ok: false, why: "Drafting…" };
-  if (msgs.some((m) => m.basis !== basisOf(aud))) return { ok: false, why: "Record changed, redrafting" };
-  const pending = neededLangs(aud).filter((l) => S.msgs[key(aud, l)].status !== "approved");
-  if (pending.length) return { ok: false, why: `${neededLangs(aud).length - pending.length} of ${neededLangs(aud).length} approved` };
-  const sentAll = LANGS.filter((l) => recipients(aud, l).length).every((l) => { const m = S.msgs[key(aud, l)]; return m.sent && m.sent.hash === m.hash; });
-  if (sentAll) return { ok: false, why: `Sent ${S.msgs[key(aud, "en")].sent?.at || ""}`.trim(), sent: true };
-  return { ok: true, why: `Ready for ${total} recipient${total === 1 ? "" : "s"}` };
+  const L = S.user.lang, mine = msgOf(aud, L);
+  if (LANGS.some((l) => !msgOf(aud, l) || msgOf(aud, l).status === "generating")) return { ok: false, why: "Drafting…" };
+  if (LANGS.some((l) => msgOf(aud, l).basis !== basisOf(aud))) return { ok: false, why: "Record changed, redrafting" };
+  if (S.edit && S.edit.aud === aud) return { ok: false, why: "Editing" };
+  if (mine.status !== "approved") return { ok: false, why: `Approve the ${LANG_NAME[L]} message first` };
+  const sentAll = LANGS.filter((l) => recipients(aud, l).length).every((l) => { const m = msgOf(aud, l); return m.sent && m.sent.text === canonical(aud, l); });
+  if (sentAll) return { ok: false, why: `Simulated send ${mine.sent?.at || ""}`.trim(), sent: true };
+  return { ok: true, why: `Ready for ${plural(total, "recipient", "recipients")}` };
 }
 
+/* The SMC approves their own language; the other two follow it and go out
+   as they stand. Each sent text is kept in the activity log as proof. */
 function simulateSend(aud) {
   if (EDIT_MODE || !sendState(aud).ok) return;
-  for (const l of neededLangs(aud)) {
-    const m = S.msgs[key(aud, l)];
-    const recheck = sha256(canonical(m));
-    if (recheck !== m.approvedHash) {
-      log("System", "Send blocked", { key: key(aud, l), hash: recheck, detail: `text differs from approved hash ${shortHash(m.approvedHash)}` });
-      S.bannerKind = "warn"; S.banner = `Send blocked: the ${LANG_NAME[l]} message for ${AUD[aud].label} no longer matches what you approved.`;
-      render(); return;
-    }
+  const L = S.user.lang, mine = msgOf(aud, L);
+  /* Compare the exact text again: nothing may differ from what the SMC approved. */
+  if (canonical(aud, L) !== mine.approvedText) {
+    log("System", "Simulated send blocked", { key: key(aud, L), detail: "text differs from what was approved" });
+    S.bannerKind = "warn"; S.banner = `Simulated send blocked: the ${LANG_NAME[L]} message for ${AUD[aud].label} no longer matches what you approved. Review it again.`;
+    resetDecision(mine, "text differs from what was approved");
+    refreshMsg(mine);
+    render(); return;
   }
-  const at = nowUtc(true);
+  const at = nowUtc();
   for (const l of LANGS) {
-    const people = recipients(aud, l);
-    if (!people.length) continue;
-    const m = S.msgs[key(aud, l)];
-    m.sent = { at, hash: m.hash, rev: m.rev };
-    log("SMC", "Simulated send", { key: key(aud, l), hash: m.hash, detail: `to ${people.map((p) => p.name).join(", ")}; matches approved hash` });
+    const people = recipients(aud, l), m = msgOf(aud, l), text = canonical(aud, l);
+    m.sent = { at, text };
+    if (people.length) log("SMC", "Simulated send", { key: key(aud, l), text,
+      detail: `to ${people.map((p) => `${p.name} (${p.channel})`).join(", ")}` + (l === L ? "; matches your approval" : `; follows the approved ${LANG_NAME[L]} text`) });
   }
-  for (const l of neededLangs(aud)) if (!recipients(aud, l).length) S.msgs[key(aud, l)].sent = { at, hash: S.msgs[key(aud, l)].hash, rev: S.msgs[key(aud, l)].rev };
   S.bannerKind = "info";
-  S.banner = `Simulated send to ${AUD[aud].label} at ${at}. Every text matched what you approved.`;
+  S.banner = `Simulated send to ${AUD[aud].label} at ${at}. Each sent text is in the activity log.`;
   render();
 }
 
@@ -1065,11 +1401,21 @@ function simulateSend(aud) {
    ===================================================================== */
 function renderSvc() {
   const el = $("svc"), a = S.ai;
-  el.dataset.state = a.state;
-  if (a.state === "checking") el.textContent = "Checking AI";
-  else if (a.state === "ready") el.textContent = `AI on · ${a.calls} calls · ${a.tokens.toLocaleString("en-US")} tokens` + (a.costKnown ? ` · $${a.cost.toFixed(4)}` : "") + (EDIT_MODE ? " · paused" : "");
-  else el.textContent = "Demo mode";
-  el.title = a.state === "ready" ? `Model: ${a.model || "tile default"}${a.residency ? " (" + a.residency.toUpperCase() + ")" : ""}` : a.message;
+  /* Shown only with Tile AI on (usage counters); without it, each message's
+     note says where its text came from. */
+  el.hidden = a.state !== "ready";
+  if (a.state === "checking") el.textContent = "Tile AI: checking";
+  else if (a.state === "ready") el.textContent = `Tile AI on · ${plural(a.calls, "call", "calls")} · ${a.tokens.toLocaleString("en-US")} tokens` + (a.costKnown ? ` · $${a.cost.toFixed(4)}` : "") + (EDIT_MODE ? " · paused in edit mode" : "");
+  else el.textContent = a.message;
+  el.title = a.state === "ready" ? `Model: ${a.model || "tile default"}${a.residency ? " (" + a.residency.toUpperCase() + ")" : ""}` : "";
+}
+
+function renderNav() {
+  const u = S.user;
+  const me = $("me");
+  me.replaceChildren(u.name, h("span", { class: "lang" }, u.lang.toUpperCase()));
+  me.setAttribute("aria-label", `Signed in as ${u.name}, ${LANG_NAME[u.lang]}. Switch profile`);
+  me.title = `${u.role} · ${LANG_SELF[u.lang]} · Switch profile`;
 }
 
 function renderHero() {
@@ -1078,12 +1424,45 @@ function renderHero() {
   const kids = [
     h("p", { class: "kicker" }, `${r.system} · ${r.id} · ${r.location}`),
     h("h1", null, r.title),
-    h("div", { class: "facts" }, h("span", { class: "sev " + r.severity }, r.severity === "major" ? "Major incident" : "Minor incident"), h("span", null, routing))
+    h("div", { class: "facts" }, h("span", { class: "sev " + r.severity }, SEV_LABEL.en[r.severity]), h("span", null, routing))
   ];
   if (S.ai.reason === "not-enabled") kids.push(h("p", { class: "setup" }, "Admin setup: if you are not approved yet, choose Request AI access in Tile and wait for approval. Then enable AI for this tile under Manage → Services, acknowledge provider egress, and reload."));
-  if (EDIT_MODE) kids.push(h("p", { class: "modeline" }, "Edit mode: drafting and sending are paused."));
-  if (S.banner) kids.push(h("div", { class: "banner" + (S.bannerKind === "info" ? " info" : ""), role: "status" }, S.banner));
+  if (EDIT_MODE) kids.push(h("p", { class: "modeline" }, "Edit mode: drafting, approving and sending are paused."));
+  if (S.banner) kids.push(h("div", { class: "banner" + (S.bannerKind === "info" ? " info" : "") }, S.banner));
   $("hero").replaceChildren(...kids);
+}
+
+function renderRecipients() {
+  const active = audiencesFor();
+  const inScope = DIRECTORY.filter((p) => active.includes(p.aud));
+  $("recipcount").textContent = `${inScope.filter((p) => !S.unselected.has(p.id)).length} of ${inScope.length} selected`;
+  const body = [];
+  for (const aud of AUD_ORDER) {
+    const people = DIRECTORY.filter((p) => p.aud === aud);
+    const informed = active.includes(aud);
+    const on = people.filter((p) => !S.unselected.has(p.id)).length;
+    const all = h("input", { type: "checkbox", checked: informed && on === people.length, disabled: !informed || EDIT_MODE,
+      "aria-label": `Send to everyone in ${AUD[aud].label}`, onchange: (e) => toggleGroup(aud, e.target.checked) });
+    all.indeterminate = informed && on > 0 && on < people.length;
+    body.push(h("tr", { class: "gr g-" + aud },
+      h("td", { class: "tick" }, all),
+      h("th", { scope: "colgroup", colspan: "4" }, AUD[aud].label,
+        h("span", { class: "gmeta" }, informed ? `${on} of ${people.length} selected` : "Not informed: minor incident"))));
+    for (const p of people) {
+      const sel = !S.unselected.has(p.id);
+      body.push(h("tr", { class: !informed ? "na" : sel ? "" : "off" },
+        h("td", { class: "tick" }, h("input", { type: "checkbox", checked: informed && sel, disabled: !informed || EDIT_MODE,
+          "aria-label": `Send to ${p.name}`, onchange: (e) => toggleRecipient(p.id, e.target.checked) })),
+        h("td", { class: "nm" }, p.name, h("span", { class: "rsub" }, p.role)),
+        h("td", null, LANG_NAME[p.lang]),
+        h("td", null, p.channel),
+        h("td", { class: "role" }, p.role)));
+    }
+  }
+  $("recipbody").replaceChildren(h("table", { class: "rtable" },
+    h("thead", null, h("tr", null, h("th", { scope: "col" }, h("span", { class: "visually-hidden" }, "Receives")),
+      ["Name", "Language", "Preferred communication channel"].map((x) => h("th", { scope: "col" }, x)), h("th", { scope: "col", class: "role" }, "Role"))),
+    h("tbody", null, body)));
 }
 
 function renderRecord() {
@@ -1093,10 +1472,10 @@ function renderRecord() {
     const items = r.items.filter((i) => i.section === s);
     return h("div", { class: "rsec " + s },
       h("h3", null, SEC_LABEL.en[s]),
-      items.length ? h("ul", null, items.map((it) => h("li", { class: "ritem" + (S.changedItems.has(it.id) ? " changed" : ""), id: "rec-" + it.id },
+      items.length ? h("ul", null, items.map((it) => h("li", { class: "ritem" + (S.changedItems.has(it.id) ? " changed" : "") },
         h("p", null, it.text),
         h("p", { class: "meta" }, `${it.id} · ${it.aud.map((a) => AUD[a].short).join(" ")}`))))
-        : h("p", { class: "ritem meta" }, "Nothing reported."));
+        : h("p", { class: "ritem empty" }, "Nothing reported."));
   });
   $("record").replaceChildren(
     h("div", { class: "record-head" }, h("h2", null, "Incident record"), h("span", { class: "lock" }, "Read-only")),
@@ -1109,276 +1488,331 @@ function renderRecord() {
   );
 }
 
-function srcChip(id) {
-  const target = () => document.getElementById("rec-" + id);
-  return h("button", { class: "src", type: "button", "aria-label": `Show record item ${id}`,
-    onmouseenter: () => target()?.classList.add("hl"), onmouseleave: () => target()?.classList.remove("hl"),
-    onfocus: () => target()?.classList.add("hl"), onblur: () => target()?.classList.remove("hl"),
-    onclick: () => target()?.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }) }, id);
-}
-
-function metric(label, value, method, warn) {
-  const muted = value == null || value === "n/a" || value === "failed";
-  return h("div", { class: "metric" },
-    h("p", { class: "k" }, label),
-    h("p", { class: "v" + (muted ? " muted" : warn ? " warn" : "") }, value == null ? "…" : value),
-    h("p", { class: "m" }, method));
-}
-function metricsRow(aud) {
-  const acc = (l) => accuracy(S.msgs[key(aud, l)]);
-  const pct = (a) => a.v == null ? null : a.v + "%";
-  const sim = S.sim[aud], st = S.simState[aud];
-  const ms = LANGS.map((l) => S.msgs[key(aud, l)]);
-  const stale = sim && ms.some((m, i) => !m || m.hash !== sim.hashes[i]);
-  const failed = st && st !== "running" && st !== "done";
-  const simBtn = (enabled, caption) => [
-    h("button", { class: "btn", type: "button", disabled: !enabled, onclick: () => openSim(aud) }, "View similarity"),
-    caption ? h("p", { class: "m" }, caption) : null];
-  const simCell = !aiReady() ? simBtn(false, "Needs Tile AI")
-    : sim && !stale ? simBtn(true, "")
-    : failed ? simBtn(false, "Failed: " + st)
-    : simBtn(false, "Calculating…");
-  const en = acc("en"), de = acc("de"), fr = acc("fr");
-  return h("div", { class: "metrics", role: "group", "aria-label": "Accuracy of this message" },
-    metric("Retrieval accuracy · EN", pct(en), en.how, en.v != null && en.v < 100),
-    metric("Translation accuracy · DE", pct(de), de.how, de.v != null && de.v < 100),
-    metric("Translation accuracy · FR", pct(fr), fr.how, fr.v != null && fr.v < 100),
-    h("div", { class: "metric simcell" }, simCell));
-}
-
-function langDot(aud, l) {
-  const m = S.msgs[key(aud, l)];
-  if (!m || m.status === "generating") return "busy";
-  if (m.status === "approved") return "ok";
-  if (m.status === "rejected") return "bad";
-  if (!neededLangs(aud).includes(l)) return "";
-  return m.flags.length ? "attn" : "";
+function plusIcon() {
+  return sv("svg", { viewBox: "0 0 20 20", "aria-hidden": "true" },
+    sv("circle", { cx: "10", cy: "10", r: "8.75", fill: "none", stroke: "currentColor", "stroke-width": "1.5" }),
+    sv("path", { d: "M10 6v8M6 10h8", stroke: "currentColor", "stroke-width": "1.6", "stroke-linecap": "round" }));
 }
 
 function renderMessage(aud, lang) {
-  const k = key(aud, lang), m = S.msgs[k], lbl = SEC_LABEL[lang];
+  const k = key(aud, lang), m = msgOf(aud, lang), lbl = SEC_LABEL[lang];
   if (!m || m.status === "generating")
-    return h("div", { class: "msg" }, h("p", { class: "placeholder" }, lang === "en" ? `Drafting from record revision ${S.rec.revision}…` : `Translating into ${LANG_NAME[lang]}…`));
-  const edit = S.edits[k];
+    return h("div", { class: "msg" }, h("p", { class: "placeholder" }, lang === "en" && !S.aud[aud]?.points.length ? `Drafting from record revision ${S.rec.revision}…` : `Translating into ${LANG_NAME[lang]}…`));
+  const editing = S.edit && S.edit.aud === aud && S.edit.lang === lang ? S.edit : null;
   const issueAt = new Set(m.aiIssues.map((x) => x.section + ":" + x.index));
-  return h("article", { class: "msg" + (m.status === "approved" ? " approved" : ""), "data-key": k, "aria-label": `${AUD[aud].label} message in ${LANG_NAME[lang]}` },
+  const sections = SECTIONS.filter((s) => editing || ptsIn(aud, s).length).map((s) => h("section", { class: "msec " + s },
+    h("div", { class: "msec-head" },
+      h("h3", null, lbl[s]),
+      editing ? h("button", { class: "add", type: "button", "data-fid": `add:${aud}:${s}`, title: "Add a point", "aria-label": `Add a point to ${lbl[s]}`, onclick: () => addPoint(s) }, plusIcon()) : null),
+    editing
+      ? h("div", { class: "rows" }, editing.secs[s].map((row, i) => h("textarea", { rows: "1", "data-fid": `edit:${aud}:${s}:${i}`,
+          "aria-label": `${lbl[s]}, point ${i + 1}`, placeholder: "New point", oninput: (e) => { row.text = e.target.value; } }, row.text)))
+      : h("ul", null, ptsIn(aud, s).map((p, i) => h("li", { class: (p.raw[lang] ? "raw" : "") + (issueAt.has(s + ":" + i) ? " flagged" : "") }, p.text[lang] || "")))));
+  return h("article", { class: "msg" + (m.status === "approved" ? " approved" : "") + (editing ? " editing" : ""), "data-key": editing ? null : k,
+      "aria-label": `${AUD[aud].label} message in ${LANG_NAME[lang]}` },
     h("p", { class: "from" }, `${S.rec.system} · ${S.rec.id}`),
     h("p", { class: "title" }, `${SEV_LABEL[lang][S.rec.severity]} · ${UPD_LABEL[lang]} ${m.rev}`),
-    SECTIONS.filter((s) => m.sections[s].length).map((s) => h("section", { class: "msec " + s },
-      h("h3", null, lbl[s]),
-      edit
-        ? m.sections[s].map((b, i) => h("textarea", { "aria-label": `${lbl[s]}, point ${i + 1}`, oninput: (e) => { edit[s][i] = e.target.value; } }, edit[s][i]))
-        : h("ul", null, m.sections[s].map((b, i) => h("li", { class: (b.text ? "" : "missing") + (issueAt.has(s + ":" + i) ? " flagged" : "") },
-            b.text || "Translation missing. Choose Edit to write it.",
-            S.showSources ? b.src.map(srcChip) : null))))));
+    sections);
 }
 
+const ORIGIN_TEXT = (m) => ({
+  ai: m.lang === "en" && m.from === "en" ? "Drafted by Tile AI" : `Translated from ${LANG_NAME[m.from]} by Tile AI`,
+  rule: "Taken from the record",
+  demo: "Reference translation",
+  edited: `Edited by ${S.user ? S.user.name : "the SMC"}`,
+  carried: `Updated from the ${LANG_NAME[m.from]} edit`,
+  none: ""
+}[m.origin]);
+
+/* Decisions on the SMC's own language: the only message they approve. */
 function renderDecision(aud, lang) {
-  const k = key(aud, lang), m = S.msgs[k];
+  const m = msgOf(aud, lang);
   if (!m || m.status === "generating") return [];
+  const editing = S.edit && S.edit.aud === aud;
   const out = [];
-  const needed = neededLangs(aud).includes(lang);
-  if (m.flags.length && m.status !== "approved" && !S.edits[k]) out.push(h("div", { class: "flags" }, m.flags.map((f) => f.blocking
+  if (m.flags.length && m.status !== "approved" && !editing) out.push(h("div", { class: "flags" }, m.flags.map((f) => f.blocking
     ? h("p", { class: "flag blocking" }, f.text)
     : h("label", { class: "flag" }, h("input", { type: "checkbox", checked: !!m.acks[f.id],
-        onchange: (e) => { if (e.target.checked) m.acks[f.id] = true; else delete m.acks[f.id]; updateGate(k); } }), h("span", null, f.text)))));
+        onchange: (e) => { if (e.target.checked) m.acks[f.id] = true; else delete m.acks[f.id]; updateGate(aud, lang); } }), h("span", null, f.text)))));
   const row = h("div", { class: "decide" });
-  if (S.edits[k]) {
-    row.append(h("button", { class: "btn blue", type: "button", onclick: () => saveEdit(k) }, "Save edit"),
-      h("button", { class: "btn", type: "button", onclick: () => { delete S.edits[k]; render(); } }, "Cancel"));
+  const edit = () => startEdit(aud);
+  if (editing) {
+    row.append(h("button", { class: "btn blue", type: "button", onclick: saveEdit }, "Save edit"),
+      h("button", { class: "btn", type: "button", onclick: cancelEdit }, "Cancel"));
   } else if (m.status === "approved") {
-    row.append(h("span", { class: "ok" }, `✓ Approved ${m.approvedAt}`), h("button", { class: "btn ghost", type: "button", onclick: () => withdraw(k) }, "Withdraw approval"));
+    row.append(h("span", { class: "ok" }, `✓ Approved ${m.approvedAt} by ${m.approvedBy}`),
+      h("button", { class: "btn ghost", type: "button", disabled: EDIT_MODE, onclick: () => withdraw(aud, lang) }, "Withdraw approval"));
   } else if (m.status === "rejected") {
     row.append(h("span", { class: "bad" }, "Rejected"),
-      h("button", { class: "btn", type: "button", disabled: EDIT_MODE, onclick: () => redraft(k) }, lang === "en" ? "Redraft all languages" : "Translate again"),
-      h("button", { class: "btn ghost", type: "button", onclick: () => startEdit(k) }, "Edit"));
+      h("button", { class: "btn", type: "button", disabled: EDIT_MODE, onclick: () => redraft(aud) }, "Redraft from record"),
+      h("button", { class: "btn ghost", type: "button", disabled: !!S.edit || EDIT_MODE, onclick: edit }, "Edit"));
   } else {
     const g = gate(m);
     row.append(
-      h("button", { class: "btn blue approve", type: "button", "data-approve": k, disabled: !g.ok || EDIT_MODE, style: `--p:${clamp(m.readMs / needMs(m), 0, 1)}`, onclick: () => approve(k) }, h("span", null, "Approve")),
-      h("button", { class: "btn", type: "button", onclick: () => startEdit(k) }, "Edit"),
-      h("button", { class: "btn ghost", type: "button", onclick: () => reject(k) }, "Reject"));
-    if (lang !== "en" && m.flags.some((f) => f.id === "chk:basis"))
-      row.append(h("button", { class: "btn", type: "button", disabled: EDIT_MODE, onclick: () => retranslate(aud, lang) }, "Translate again"));
-    row.append(h("span", { class: "why", "data-why": k }, needed ? g.why : "No recipients in this language. Approve anyway or skip."));
+      h("button", { class: "btn blue approve", type: "button", "data-approve": key(aud, lang), "data-fid": `approve:${aud}:${lang}`, disabled: !g.ok || EDIT_MODE,
+        style: `--p:${clamp(m.readMs / needMs(m), 0, 1)}`, onclick: () => approve(aud, lang) }, h("span", null, "Approve")),
+      h("button", { class: "btn", type: "button", disabled: !!S.edit || EDIT_MODE, onclick: edit }, "Edit"),
+      h("button", { class: "btn ghost", type: "button", disabled: editing, onclick: () => reject(aud, lang) }, "Reject"),
+      h("span", { class: "why", "data-why": key(aud, lang) }, g.why));
   }
   out.push(row);
-  const meta = [m.note, `${{ ai: "Drafted by Tile AI", rule: "Taken from the record", demo: "Reference translation", edited: "Edited by you", none: "" }[m.origin]} · sha256 ${shortHash(m.hash)}`].filter(Boolean).join(" · ");
-  out.push(h("p", { class: "note", title: m.hash }, meta));
+  const meta = [ORIGIN_TEXT(m), m.note].filter(Boolean).join(" · ");
+  if (meta) out.push(h("p", { class: "note" }, meta));
   return out;
 }
 
+/* Dot and word for one language's state, shared by the card and the flow. */
+/* Your language needs your approval; the other two follow it, so they only
+   report whether they are up to date. */
+function langState(aud, l) {
+  const m = msgOf(aud, l), mine = l === S.user.lang;
+  if (!m || m.status === "generating") return { dot: "busy", word: l === "en" && !S.aud[aud]?.points.length ? "Drafting…" : "Updating…" };
+  if (!mine && S.edit && S.edit.aud === aud) return { dot: "busy", word: "Updating…" };
+  const sent = m.sent && m.sent.text === canonical(aud, l) && (!mine || m.status === "approved");
+  if (sent) return { dot: "ok", word: `Simulated send ${m.sent.at}` };
+  if (mine) {
+    if (m.status === "approved") return { dot: "ok", word: "Approved" };
+    if (m.status === "rejected") return { dot: "bad", word: "Rejected" };
+    if (m.flags.some((f) => f.blocking)) return { dot: "bad", word: "Blocked" };
+    return { dot: m.flags.length ? "attn" : "live", word: "Needs approval" };
+  }
+  if (!recipients(aud, l).length) return { dot: "", word: "No recipients" };
+  if (S.aud[aud].points.some((p) => p.raw[l])) return { dot: "attn", word: "Real LLM required" };
+  return { dot: m.flags.length ? "attn" : "", word: "Up to date" };
+}
+
+function alsoRow(aud) {
+  const others = LANGS.filter((l) => l !== S.user.lang);
+  const editing = S.edit && S.edit.aud === aud;
+  return h("div", { class: "also" }, h("span", null, "Also sent in"),
+    others.map((l) => {
+      const st = langState(aud, l);
+      return h("button", { class: "pill", type: "button",
+        "data-fid": `also:${aud}:${l}`, onclick: () => openReview(aud, l), "aria-label": `Show the ${LANG_NAME[l]} message: ${st.word}` },
+        h("span", { class: "dot " + st.dot, "aria-hidden": "true" }), `${LANG_NAME[l]} · ${st.word}`);
+    }),
+    editing ? h("p", { class: "live-note" }, `Live translation while you type: ${PLACEHOLDER.en}`) : null);
+}
+
+function kpiButton(aud) {
+  const low = LANGS.some((l) => { const a = accuracy(msgOf(aud, l)); return a.v != null && a.v < 100; });
+  return h("button", { class: "kpi" + (low ? " attn" : ""), type: "button", "data-fid": `kpi:${aud}`, "aria-expanded": String(S.kpi === aud), "aria-controls": "kpi-" + aud,
+    "aria-label": `Accuracy for ${AUD[aud].label}${low ? ": below 100%" : ""}`, title: "Accuracy",
+    onclick: (e) => { e.stopPropagation(); S.kpi = S.kpi === aud ? null : aud; renderCards(); } }, "i");
+}
+function kpiPanel(aud) {
+  const row = (label, sub, l) => {
+    const a = accuracy(msgOf(aud, l));
+    const v = a.v == null ? (a.how || "…") : a.v + "%";
+    return h("div", { class: "kpi-row" },
+      h("div", null, h("p", { class: "k" }, label), h("p", { class: "m" }, [sub, a.v != null ? a.how : ""].filter(Boolean).join(" · "))),
+      h("p", { class: "v" + (a.v == null ? " muted" : a.v < 100 ? " warn" : "") }, v));
+  };
+  return h("div", { class: "kpi-pop", id: "kpi-" + aud, role: "group", "aria-label": `Accuracy for ${AUD[aud].label}` },
+    row("Retrieval accuracy · EN", "English vs incident record", "en"),
+    row("Translation accuracy · DE", "German vs English", "de"),
+    row("Translation accuracy · FR", "French vs English", "fr"));
+}
+
 function renderGroup(aud) {
-  const lang = S.view[aud];
+  const lang = S.user.lang;
   const st = sendState(aud);
   const people = DIRECTORY.filter((p) => p.aud === aud);
   const selected = people.filter((p) => !S.unselected.has(p.id)).length;
-  const langPeople = people.filter((p) => p.lang === lang);
-  return h("article", { class: "card group", "aria-labelledby": "g-" + aud },
+  return h("article", { class: "card group", id: "g-" + aud, "aria-labelledby": "gh-" + aud },
     h("div", { class: "ghead" },
-      h("div", null, h("h2", { id: "g-" + aud }, AUD[aud].label), h("p", { class: "sub" }, `${selected} of ${people.length} recipients · ${itemsFor(aud).length} record items`)),
+      h("div", { class: "gtitle" },
+        h("div", { class: "gname" }, h("h2", { id: "gh-" + aud }, AUD[aud].label), kpiButton(aud)),
+        h("p", { class: "sub" }, `${selected} of ${people.length} recipients · ${plural(itemsFor(aud).length, "record item", "record items")}`),
+        S.kpi === aud ? kpiPanel(aud) : null),
       h("div", { class: "sendbox" },
         h("span", { class: "why" + (st.sent ? " done" : "") }, st.why),
         h("button", { class: "btn dark", type: "button", disabled: !st.ok || EDIT_MODE, onclick: () => simulateSend(aud) }, "Simulate send"))),
-    metricsRow(aud),
-    h("div", { class: "seg", role: "tablist", "aria-label": "Language" }, LANGS.map((l) => h("button", { type: "button", role: "tab", "aria-selected": String(l === lang),
-      onclick: () => { S.view[aud] = l; render(); } }, h("span", { class: "dot " + langDot(aud, l), "aria-hidden": "true" }), LANG_NAME[l]))),
-    h("div", { class: "to" }, h("span", null, "To"),
-      langPeople.length ? langPeople.map((p) => h("label", { class: "chip", title: p.role },
-        h("input", { type: "checkbox", checked: !S.unselected.has(p.id), onchange: (e) => toggleRecipient(p.id, e.target.checked) }), p.name))
-        : h("span", null, "No English recipients")),
     renderMessage(aud, lang),
-    ...renderDecision(aud, lang));
+    ...renderDecision(aud, lang),
+    alsoRow(aud));
 }
 
 function renderGroups() {
   const active = audiencesFor();
-  $("groups").replaceChildren(...AUD_ORDER.map((aud) => active.includes(aud) ? renderGroup(aud)
-    : h("div", { class: "card not-informed" }, h("h2", null, AUD[aud].label), h("p", null, "Not informed. Management only receives messages for major incidents."))));
+  $("groups").replaceChildren(...AUD_ORDER.map((aud) => active.includes(aud) && S.aud[aud] ? renderGroup(aud)
+    : !active.includes(aud) ? h("div", { class: "card not-informed" }, h("h2", null, AUD[aud].label), h("p", null, "Not informed. Management only receives messages for major incidents."))
+    : null).filter(Boolean));
+}
+function renderCards() { renderGroups(); observeMessages(); }
+
+/* ---------- review dialog: one other language, read-only ---------- */
+function openReview(aud, lang) {
+  S.review = { aud, lang };
+  S.kpi = null;
+  renderReview();
+  if (!$("reviewdlg").open) $("reviewdlg").showModal();
   observeMessages();
 }
-
-/* ---------- similarity dialog ---------- */
-/* Fixed colour per language (dataviz categorical slots 1–3); never reassigned. */
-const LANG_COLOR = { en: "#2a78d6", de: "#eb6834", fr: "#1baf7a" };
-function sv(tag, attrs, ...kids) {
-  const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
-  for (const [k, v] of Object.entries(attrs || {})) {
-    if (v == null) continue;
-    if (k.startsWith("on") && typeof v === "function") el.addEventListener(k.slice(2), v); else el.setAttribute(k, v);
-  }
-  for (const c of kids.flat()) if (c != null) el.append(c instanceof Node ? c : document.createTextNode(String(c)));
-  return el;
+function closeReview() {
+  S.review = null;
+  if ($("reviewdlg").open) $("reviewdlg").close();
+}
+function renderReview() {
+  const R = S.review;
+  if (!R || !msgOf(R.aud, R.lang)) { closeReview(); return; }
+  $("reviewtitle").textContent = `${LANG_NAME[R.lang]} · ${AUD[R.aud].label}`;
+  const m = msgOf(R.aud, R.lang), st = langState(R.aud, R.lang);
+  const notes = m.status === "generating" ? [] : m.flags.filter((f) => f.id !== "chk:language");
+  $("reviewbody").replaceChildren(renderMessage(R.aud, R.lang),
+    ...(notes.length ? [h("div", { class: "flags" }, notes.map((f) => h("p", { class: "flag" + (f.blocking ? " blocking" : "") }, f.text)))] : []),
+    h("p", { class: "note" }, [st.word, ORIGIN_TEXT(m), m.note].filter(Boolean).join(" · ")));
 }
 
-/* Both panels share one projection and one scale, so English sits in the same place in each. */
-function spacePanel(sim, lang) {
-  const W = 420, H = 300, P = 28, tip = $("simtip");
-  const all = [...sim.xy.en, ...sim.xy.de, ...sim.xy.fr];
-  const xs = all.map((p) => p[0]), ys = all.map((p) => p[1]);
-  const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
-  const X = (x) => P + ((x - x0) / ((x1 - x0) || 1)) * (W - 2 * P);
-  const Y = (y) => H - P - ((y - y0) / ((y1 - y0) || 1)) * (H - 2 * P);
-  const n = Math.min(sim.xy.en.length, sim.xy[lang].length);
-  const ti = lang === "de" ? 1 : 2;
-  const svg = sv("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `English and ${LANG_NAME[lang]} points in a shared vector space` });
-  for (let i = 0; i < n; i++) svg.append(sv("line", { class: "pair", x1: X(sim.xy.en[i][0]), y1: Y(sim.xy.en[i][1]), x2: X(sim.xy[lang][i][0]), y2: Y(sim.xy[lang][i][1]) }));
-  for (const l of ["en", lang]) sim.xy[l].forEach((p, i) => {
-    const cx = X(p[0]), cy = Y(p[1]);
-    const cosv = sim[lang].M[i]?.[i];
-    const text = `${sim.labels[i] || ""} · ${l.toUpperCase()}\n${sim.texts[l === "en" ? 0 : ti][i]}` + (cosv != null ? `\nCosine EN↔${lang.toUpperCase()}: ${cosv.toFixed(3)}` : "");
-    const show = (e) => { tip.textContent = text; tip.hidden = false; const r = e.target.getBoundingClientRect(); tip.style.left = Math.max(8, Math.min(r.right + 10, innerWidth - 330)) + "px"; tip.style.top = Math.max(8, r.top - 8) + "px"; };
-    const hide = () => { tip.hidden = true; };
-    svg.append(sv("circle", { class: "pt", cx, cy, r: 5.5, fill: LANG_COLOR[l] }));
-    if (l === "en" && sim.labels[i]) svg.append(sv("text", { x: cx + 9, y: cy + 3.5 }, sim.labels[i]));
-    svg.append(sv("circle", { class: "hit", cx, cy, r: 12, tabindex: "0", "aria-label": text.replace(/\n/g, ". "), onmouseenter: show, onmouseleave: hide, onfocus: show, onblur: hide }));
-  });
-  const mean = sim[lang].mean;
-  return h("div", { class: "space" },
-    h("p", { class: "k" }, `English ↔ ${LANG_NAME[lang]}`),
-    h("p", { class: "v" + (mean < 0.75 ? " warn" : "") }, mean.toFixed(2)),
-    h("p", { class: "m" }, "Mean cosine similarity per point (1.00 = same meaning)"),
-    svg,
-    h("div", { class: "key" },
-      h("span", null, h("i", { style: `background:${LANG_COLOR.en}` }), "English"),
-      h("span", null, h("i", { style: `background:${LANG_COLOR[lang]}` }), LANG_NAME[lang]),
-      h("span", null, h("i", { style: "background:#c7c7cc;border-radius:1px;height:2px;width:14px" }), "Same point")));
+/* ---------- verification flow ---------- */
+const EDGE_OF_DOT = { busy: "pending", ok: "ok", bad: "bad", attn: "attn", live: "live", "": "live" };
+const edgeState = (aud, l) => EDGE_OF_DOT[langState(aud, l).dot];
+function flowNode(aud, l, extra) {
+  const m = msgOf(aud, l), a = accuracy(m), st = langState(aud, l);
+  const metric = l === "en" ? "Retrieval" : "Translation";
+  const pct = a.v == null ? "…" : a.v + "%";
+  const fails = m && m.status !== "generating" ? m.checks.filter((c) => !c.ok).length : 0;
+  const mine = l === S.user.lang;
+  return h("button", { class: `fnode ${l === "en" ? "fen" : ""}${mine ? " mine" : ""}`, type: "button", "data-node": key(aud, l), style: extra || null,
+      onclick: () => mine ? $("g-" + aud)?.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }) : openReview(aud, l),
+      "aria-label": `${AUD[aud].label}, ${LANG_NAME[l]}: ${metric.toLowerCase()} accuracy ${pct}, ${st.word}` },
+    h("span", { class: "fk" }, l === "en" ? AUD[aud].label : LANG_NAME[l]),
+    l === "en" ? h("span", null, `English${mine ? " · your language" : ""}`) : mine ? h("span", null, "Your language") : null,
+    h("span", null, `${metric} ${pct}`),
+    fails ? h("span", null, `${plural(fails, "check fails", "checks fail")}`) : null,
+    h("span", { class: "fs" }, h("span", { class: "dot " + st.dot, "aria-hidden": "true" }), st.word));
 }
-
-function openSim(aud) {
-  if (!S.sim[aud]) return;
-  S.simOpen = aud;
-  renderSimDialog();
-  if (!$("simdlg").open) $("simdlg").showModal();
-}
-function renderSimDialog() {
-  const dlg = $("simdlg"), aud = S.simOpen, sim = aud && S.sim[aud];
-  if (!sim) { if (dlg.open) dlg.close(); return; }
-  $("simtitle").textContent = `Translation similarity · ${AUD[aud].label}`;
-  $("simbody").replaceChildren(
-    h("div", { class: "spaces" }, spacePanel(sim, "de"), spacePanel(sim, "fr")),
-    h("details", null, h("summary", null, "Show values as a table"),
-      h("table", null,
-        h("thead", null, h("tr", null, ["Point", "English", "EN↔DE", "EN↔FR"].map((x) => h("th", { scope: "col" }, x)))),
-        h("tbody", null, sim.labels.map((lb, i) => h("tr", null, h("td", { class: "mono" }, lb), h("td", null, sim.texts[0][i]),
-          h("td", { class: "mono" }, sim.de.M[i]?.[i]?.toFixed(3) ?? "—"), h("td", { class: "mono" }, sim.fr.M[i]?.[i]?.toFixed(3) ?? "—")))))));
-}
-
-/* Top two principal components by power iteration (n ≤ 96 points, so this is cheap). */
-function pca2(rows) {
-  const d = rows[0].length;
-  const dot = (a, b) => { let s = 0; for (let j = 0; j < d; j++) s += a[j] * b[j]; return s; };
-  let R = rows.map((r) => r.slice());
-  const comps = [];
-  for (let c = 0; c < 2; c++) {
-    let v = Array.from({ length: d }, (_, j) => Math.sin(j + 1 + 7 * c));
-    for (let it = 0; it < 60; it++) {
-      const w = new Array(d).fill(0);
-      for (const r of R) { const s = dot(r, v); for (let j = 0; j < d; j++) w[j] += r[j] * s; }
-      const norm = Math.sqrt(dot(w, w)) || 1;
-      v = w.map((x) => x / norm);
+function renderFlow() {
+  const auds = AUD_ORDER;
+  const active = audiencesFor();
+  const edges = [];
+  const kids = [h("div", { class: "fnode frec", "data-node": "rec", style: `--rows:${auds.length}` },
+    h("span", { class: "fk" }, "Incident record"),
+    h("span", null, `Revision ${S.rec.revision} · ${S.rec.updatedAt}`),
+    h("span", null, plural(S.rec.items.length, "item", "items")))];
+  auds.forEach((aud, i) => {
+    const row = `--row:${i + 1}`;
+    if (!active.includes(aud) || !S.aud[aud]) {
+      kids.push(h("div", { class: "fnode fen off", style: row }, h("span", { class: "fk" }, AUD[aud].label),
+        h("span", null, active.includes(aud) ? "Drafting…" : "Not informed: minor incident")));
+      return;
     }
-    comps.push(v);
-    R = R.map((r) => { const p = dot(r, v); return r.map((x, j) => x - p * v[j]); });
-  }
-  return rows.map((r) => [dot(r, comps[0]), dot(r, comps[1])]);
+    kids.push(flowNode(aud, "en", row));
+    kids.push(h("div", { class: "ftr", style: row }, flowNode(aud, "de"), flowNode(aud, "fr")));
+    edges.push({ from: "rec", to: key(aud, "en"), state: edgeState(aud, "en") });
+    for (const l of ["de", "fr"]) edges.push({ from: key(aud, "en"), to: key(aud, l), state: edgeState(aud, l) });
+  });
+  const box = h("div", { class: "flow", role: "group", "aria-label": "Record to English to German and French, per audience" },
+    sv("svg", { class: "wires", "aria-hidden": "true" }), ...kids);
+  box._edges = edges;
+  return box;
 }
+
+/* Wires follow the laid-out nodes: curves across on wide screens, a bus
+   down the left edge with short drops on narrow screens. */
+function drawWires() {
+  const box = document.querySelector(".flow");
+  if (!box || !box.isConnected || !box.offsetParent) return;
+  const svg = box.querySelector(".wires"), b = box.getBoundingClientRect();
+  const wide = matchMedia("(min-width: 761px)").matches;
+  const R = (el) => { const r = el.getBoundingClientRect(); return { l: r.left - b.left, r: r.right - b.left, t: r.top - b.top, b: r.bottom - b.top, cx: r.left - b.left + r.width / 2, cy: r.top - b.top + r.height / 2 }; };
+  const paths = [];
+  for (const e of box._edges || []) {
+    const fa = box.querySelector(`[data-node="${e.from}"]`), fb = box.querySelector(`[data-node="${e.to}"]`);
+    if (!fa || !fb) continue;
+    const a = R(fa), z = R(fb);
+    let d;
+    if (wide) { const dx = (z.l - a.r) / 2; d = `M${a.r} ${a.cy} C${a.r + dx} ${a.cy} ${z.l - dx} ${z.cy} ${z.l} ${z.cy}`; }
+    else if (e.from === "rec") { const x = 8; d = `M${a.l} ${a.cy} H${x + 10} Q${x} ${a.cy} ${x} ${a.cy + 10} V${z.cy - 10} Q${x} ${z.cy} ${x + 10} ${z.cy} H${z.l}`; }
+    else { const dy = (z.t - a.b) / 2; d = `M${a.cx} ${a.b} C${a.cx} ${a.b + dy} ${z.cx} ${z.t - dy} ${z.cx} ${z.t}`; }
+    paths.push(sv("path", { class: "wire", d }), sv("path", { class: "current " + e.state, d }));
+  }
+  svg.setAttribute("viewBox", `0 0 ${b.width} ${b.height}`);
+  svg.replaceChildren(...paths);
+}
+const wireObserver = "ResizeObserver" in window ? new ResizeObserver(() => drawWires()) : null;
 
 function renderLog() {
   if (!$("log").open) return;
-  const rows = [];
-  for (const aud of audiencesFor()) for (const l of LANGS) {
-    const m = S.msgs[key(aud, l)];
-    if (!m) continue;
-    const failed = m.checks.filter((c) => !c.ok);
-    const a = accuracy(m);
-    rows.push(h("tr", null,
-      h("td", null, `${AUD[aud].short} · ${l.toUpperCase()}`), h("td", null, m.status),
-      h("td", null, a.v == null ? "—" : `${a.v}% (${l === "en" ? "retrieval" : "translation"})`),
-      h("td", null, m.status === "generating" ? "—" : failed.length ? h("span", { class: "fail" }, failed.map((c) => c.label).join("; ")) : h("span", { class: "pass" }, `All ${m.checks.length} pass`)),
-      h("td", { class: "mono", title: m.hash }, shortHash(m.hash)),
-      h("td", { class: "mono" }, m.approvedHash ? (m.approvedHash === m.hash ? "matches" : "differs") : "—")));
-  }
   const dl = () => {
     const blob = new Blob([JSON.stringify({ incident: S.rec.id, exportedAt: new Date().toISOString(), entries: S.log }, null, 2)], { type: "application/json" });
-    const a = h("a", { href: URL.createObjectURL(blob), download: `${S.rec.id}-audit.json` });
+    const a = h("a", { href: URL.createObjectURL(blob), download: `${S.rec.id}-activity.json` });
     document.body.append(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   };
+  const flow = renderFlow();
   $("logbody").replaceChildren(
     h("h3", null, "Verification"),
-    h("table", null, h("thead", null, h("tr", null, ["Message", "Status", "Accuracy", "Checks", "Hash", "Approved hash"].map((x) => h("th", { scope: "col" }, x)))), h("tbody", null, rows)),
+    flow,
     h("div", { class: "logbar" }, h("h3", null, "Activity log"), h("button", { class: "btn ghost", type: "button", onclick: dl }, "Download JSON")),
-    h("table", null, h("thead", null, h("tr", null, ["Time", "Who", "Event", "Message", "Rev", "Hash", "Detail"].map((x) => h("th", { scope: "col" }, x)))),
+    h("div", { class: "tablewrap" }, h("table", { class: "act" },
+      h("thead", null, h("tr", null, ["Time", "Who", "Event", "Message", "Rev", "Detail"].map((x) => h("th", { scope: "col" }, x)))),
       h("tbody", null, S.log.slice().reverse().map((e) => h("tr", null,
-        h("td", { class: "mono" }, e.time), h("td", null, e.actor === "SMC" ? `SMC · ${e.who}` : e.actor), h("td", null, e.event),
-        h("td", { class: "mono" }, e.message), h("td", { class: "mono" }, e.revision ?? ""), h("td", { class: "mono", title: e.hash }, shortHash(e.hash)), h("td", null, e.detail))))));
+        h("td", { class: "mono" }, e.time), h("td", null, e.who), h("td", null, e.event),
+        h("td", { class: "mono" }, e.message ? keyLabel(e.message) : ""), h("td", { class: "mono" }, e.revision ?? ""),
+        h("td", null, e.detail, e.text ? h("details", { class: "sent" }, h("summary", null, "Show sent message"), h("pre", null, e.text)) : null)))))));
+  if (wireObserver) { wireObserver.disconnect(); wireObserver.observe(flow); }
+  requestAnimationFrame(drawWires);
 }
 
+let toastTimer = null;
+function showToast(text, kind) {
+  S.toast = { text, kind };
+  clearTimeout(toastTimer);
+  /* Warnings stay until dismissed; confirmations fade after a few seconds. */
+  if (kind !== "warn") toastTimer = setTimeout(() => { S.toast = null; renderToast(); }, 6000);
+  renderToast();
+}
+function renderToast() {
+  const el = $("toast"), t = S.toast;
+  el.hidden = !t;
+  if (!t) { el.replaceChildren(); return; }
+  el.className = "toast" + (t.kind === "warn" ? " warn" : "");
+  el.replaceChildren(h("p", null, t.text), h("button", { type: "button", onclick: () => { S.toast = null; renderToast(); } }, "Dismiss"));
+}
+
+/* Re-rendering replaces nodes; put focus (and the caret) back where it was. */
 function render() {
+  if (!S.user) return;
+  const a = document.activeElement;
+  const fid = S.focusNext || (a && a.dataset ? a.dataset.fid : null);
+  const caret = !S.focusNext && a && a.tagName === "TEXTAREA" ? [a.selectionStart, a.selectionEnd] : null;
+  S.focusNext = null;
   renderSvc();
+  renderNav();
   renderHero();
+  renderRecipients();
   renderRecord();
   renderGroups();
   renderLog();
-  if (S.simOpen) renderSimDialog();
+  if (S.view === "manage") renderManage();
+  if (S.review) renderReview();
+  observeMessages();
+  if (fid) {
+    const el = document.querySelector(`[data-fid="${fid}"]`);
+    if (el && el !== document.activeElement) {
+      el.focus({ preventScroll: true });
+      if (caret && el.setSelectionRange) el.setSelectionRange(caret[0], caret[1]);
+    }
+  }
 }
 
 /* Update one approve button without re-rendering (keeps focus and scroll). */
-function updateGate(k) {
-  const m = S.msgs[k];
+function updateGate(aud, lang) {
+  const m = msgOf(aud, lang), k = key(aud, lang);
   const btn = document.querySelector(`[data-approve="${k}"]`);
   if (!m || !btn) return;
   const g = gate(m);
   btn.disabled = !g.ok || EDIT_MODE;
   btn.style.setProperty("--p", clamp(m.readMs / needMs(m), 0, 1));
   const why = document.querySelector(`[data-why="${k}"]`);
-  if (why && neededLangs(m.aud).includes(m.lang)) why.textContent = g.why;
+  if (why) why.textContent = g.why;
 }
 
 /* =====================================================================
    Reading gate: time a message spends at least 60% on screen while the
-   tab is visible and focused counts as reading time.
+   tab is visible and focused counts as reading time. While the review
+   dialog is open, only the message inside it can be read.
    ===================================================================== */
 const visible = new Set();
 const io = "IntersectionObserver" in window ? new IntersectionObserver((entries) => {
@@ -1391,12 +1825,15 @@ function observeMessages() {
   document.querySelectorAll(".msg[data-key]").forEach((el) => io.observe(el));
 }
 setInterval(() => {
-  if (document.visibilityState !== "visible" || !document.hasFocus()) return;
+  if (!S.user || document.visibilityState !== "visible" || !document.hasFocus()) return;
+  const inDialog = S.review ? key(S.review.aud, S.review.lang) : null;
   for (const k of visible) {
-    const m = S.msgs[k];
-    if (!m || m.status !== "draft" || S.edits[k] || m.readMs >= needMs(m)) continue;
+    if (inDialog && k !== inDialog) continue;
+    const [aud, lang] = k.split(":");
+    const m = msgOf(aud, lang);
+    if (!m || m.status !== "draft" || (S.edit && S.edit.aud === aud) || m.readMs >= needMs(m)) continue;
     m.readMs += 250;
-    updateGate(k);
+    updateGate(aud, lang);
   }
 }, 250);
 
@@ -1404,15 +1841,16 @@ setInterval(() => {
    Start-up
    ===================================================================== */
 async function detectAi() {
+  const off = "Tile AI off: English comes from the record, German and French from bundled reference translations. No AI review.";
   if (window.__tileLoadFailed || !window.tile || !tile.ai) {
-    Object.assign(S.ai, { state: "demo", message: "Demo mode: the Tile SDK is not loaded. English is taken from the record, translations are bundled references. AI review and similarity are off." });
+    Object.assign(S.ai, { state: "demo", message: off });
     return;
   }
   try {
     const a = await tile.ai.available();
     if (!a.ok) {
-      const why = { "not-enabled": "AI is not enabled for this tile", "not-a-viewer": "you do not have AI access on this tile; ask a tile admin", unavailable: "AI is temporarily unavailable" }[a.reason] || "AI is not available";
-      Object.assign(S.ai, { state: "off", reason: a.reason, message: `Demo mode: ${why}. English is taken from the record, translations are bundled references.` });
+      const why = { "not-enabled": "not enabled for this tile", "not-a-viewer": "you have no AI access on this tile; ask a tile admin", unavailable: "temporarily unavailable" }[a.reason] || "not available";
+      Object.assign(S.ai, { state: "off", reason: a.reason, message: `Tile AI ${why}. ${off.replace("Tile AI off: ", "")}` });
       return;
     }
     const chat = (a.models || []).filter((m) => m.kind === "chat");
@@ -1420,36 +1858,67 @@ async function detectAi() {
     const dflt = chat.find((m) => m.id === a.default);
     Object.assign(S.ai, { state: "ready", model: eu ? eu.id : null, residency: (eu || dflt || {}).residency || null });
   } catch (e) {
-    Object.assign(S.ai, { state: "off", message: "Demo mode: the AI availability check failed. English is taken from the record, translations are bundled references." });
+    Object.assign(S.ai, { state: "off", message: `Tile AI check failed. ${off.replace("Tile AI off: ", "")}` });
   }
-}
-async function detectMe() {
-  if (!window.tile || window.__tileLoadFailed) { S.meNote = "local"; S.me = "SMC on shift (local)"; return; }
-  try { const me = await tile.me(); S.me = me.email || "SMC on shift"; S.meNote = me.email ? "ok" : "unknown"; }
-  catch (e) { S.meNote = "failed"; S.me = "SMC on shift (identity check failed)"; }
 }
 
 function startScenario(i) {
   loadScenario(i);
+  closeReview();
+  S.toast = null; renderToast();
   render();
   if (!EDIT_MODE) audiencesFor().forEach((a) => generateAudience(a));
 }
 
+function signIn(u) {
+  const switching = !!S.user;
+  S.user = u;
+  S.edit = null; S.kpi = null;
+  S.toast = null; renderToast();
+  closeReview();
+  log("SMC", switching ? "Switched profile" : "Signed in", { detail: `${u.role}, messages in ${LANG_NAME[u.lang]}` });
+  $("login").hidden = true;
+  $("app").hidden = false;
+  S.view = "messages"; $("manage").hidden = true; $("main").hidden = false;
+  window.scrollTo(0, 0);
+  if (!S.started) { S.started = true; startScenario(Number($("scenario").value) || 0); }
+  else render();
+}
+function showLogin() {
+  S.edit = null; S.kpi = null;
+  closeReview();
+  $("app").hidden = true;
+  $("login").hidden = false;
+  $("profiles").querySelector("button")?.focus();
+}
+
+let aiReadyPromise = null;
 (async () => {
+  $("profiles").replaceChildren(...USERS.map((u) => h("button", { class: "profile", type: "button", onclick: async () => { await aiReadyPromise; signIn(u); } },
+    h("span", { class: "avatar", "aria-hidden": "true" }, u.initials),
+    h("span", { class: "pname" }, u.name),
+    h("span", { class: "prole" }, u.role),
+    h("span", { class: "plang" }, u.flavour),
+    h("span", { class: "pmsg" }, `Messages in ${LANG_SELF[u.lang]}`))));
   const sel = $("scenario");
   SCENARIOS.forEach((sc, i) => sel.append(h("option", { value: String(i) }, `${sc.record.system} · ${sc.record.severity}`)));
   sel.addEventListener("change", () => startScenario(Number(sel.value)));
-  $("sources").addEventListener("change", (e) => { S.showSources = e.target.checked; renderGroups(); });
+  $("me").addEventListener("click", showLogin);
+  $("managebtn").append(gearIcon());
+  $("managebtn").addEventListener("click", openManage);
+  $("manageback").addEventListener("click", closeManage);
+  $("orgsearch").addEventListener("input", (e) => searchOrg(e.target.value));
+  $("orgsearch").addEventListener("keydown", onSearchKey);
   $("log").addEventListener("toggle", renderLog);
-  $("simclose").addEventListener("click", () => $("simdlg").close());
-  $("simdlg").addEventListener("close", () => { S.simOpen = null; $("simtip").hidden = true; });
-  $("simdlg").addEventListener("click", (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); });
-  loadScenario(0);
-  render();
-  await Promise.all([detectAi(), detectMe()]);
-  log("System", "Session started", { detail: S.ai.state === "ready" ? `Tile AI ${S.ai.model || "default model"}` : "demo mode" });
-  render();
-  if (!EDIT_MODE) audiencesFor().forEach((a) => generateAudience(a));
+  $("reviewclose").addEventListener("click", closeReview);
+  $("reviewdlg").addEventListener("close", () => { S.review = null; $("reviewbody").replaceChildren(); render(); });
+  $("reviewdlg").addEventListener("click", (e) => { if (e.target === e.currentTarget) closeReview(); });
+  document.addEventListener("click", (e) => { if (S.kpi && !e.target.closest(".kpi-pop")) { S.kpi = null; renderCards(); } });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && S.kpi) { const a = S.kpi; S.kpi = null; renderCards(); document.querySelector(`[data-fid="kpi:${a}"]`)?.focus(); } });
+  aiReadyPromise = detectAi();
+  await aiReadyPromise;
+  log("System", "Session started", { detail: S.ai.state === "ready" ? `Tile AI ${S.ai.model || "default model"}` : "Tile AI off" });
+  renderSvc();
 })();
 </script>
 </body>

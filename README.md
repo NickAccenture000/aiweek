@@ -6,18 +6,20 @@ Drafts incident messages for ATCO supervisors, engineering and management in Eng
 
 **Open the live tool:** https://tile.accenture.com/view/stakeholder-message-generator/
 
-Sign in with your Accenture account. If you see an access error, ask the team to add you. The top bar shows **AI on** when drafting, translation review and similarity run through Tile AI.
+Sign in with your Accenture account. If you see an access error, ask the team to add you. The live tile shows the version last published with `publish.ps1`.
 
-1. Start with the **SKYFORGE · major** incident (selector in the top bar). All three audiences are informed.
-2. For each audience, read the message until **Approve** unlocks, tick any notes, then approve. Switch between English, German and French with the language control.
-3. Choose **View similarity** to compare English with each translation.
-4. Choose **Simulate send** once all languages of an audience are approved.
-5. Choose **Apply record update** and check that only the affected audiences are redrafted and need approval again.
-6. Try **Edit** and **Reject** on a message, and switch to the **METEOFLOW · minor** incident: management is not informed.
+1. **Pick an SMC profile.** Luc Bürki, Chiara Mercurio and Mansur Kagermann work in German; Hugo Zweifel and Nicolas Ammann in French; Tiago Hungerland and Robert Seggewiss in English. Messages open in that language; the incident record stays in English.
+2. Start with the **SKYFORGE · major** incident (selector in the top bar). All three audiences are informed. Open **Recipients** to see who gets each message, in which language and channel, and untick anyone who shouldn't. The gear next to it opens **Manage stakeholders**: type a name to add someone from the organisation (group, language, channel and role fill in automatically), or remove someone.
+3. For each audience, read the message until **Approve** unlocks, then approve. You approve your own language only; the other two follow it. Choose the **i** next to the audience name to see retrieval and translation accuracy.
+4. Choose **Simulate send**. Under **Also sent in** you can read the other two languages.
+5. Choose **Edit**, change a number or add a point with the **+** next to a subsection, and save. A pop-up confirms that the other two languages were updated. Approve your message again.
+6. Choose **Apply record update** and check that only the affected audiences are redrafted and need approval again. Your edits stay; a note flags any edited point whose record item changed.
+7. Switch to the **METEOFLOW · minor** incident: management is not informed.
+8. Open **Verification and activity log** at the bottom. The flow shows the record feeding each English message and each English message feeding German and French. The log shows which profile did what; each simulated send has **Show sent message** with the exact text in that language.
 
-Things to look for: wrong or missing facts, translations that don't match the English, and anything that slows you down under time pressure.
+Things to look for: wrong or missing facts, translations that don't match, and anything that slows you down under time pressure.
 
-**Offline fallback:** open `index.html` from the zip in Edge or Chrome. It runs in demo mode: English is taken from the record, translations are bundled references, and there is no AI review or similarity.
+**Without Tile AI** (the current state, and when you open `index.html` directly in Edge or Chrome): English comes straight from the record and German and French from bundled reference translations. Edits that only change numbers, times or codes carry over to the other languages. Any other new wording shows "Real LLM required → implementation phase" in the other languages; real translation, also live while typing, comes with an LLM in the implementation phase.
 
 ## Repo map
 
