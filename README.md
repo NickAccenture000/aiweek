@@ -11,7 +11,7 @@ Sign in with your Accenture account. If you see an access error, ask the team to
 1. **Pick an SMC profile.** Luc Bürki, Chiara Mercurio and Mansur Kagermann work in German; Hugo Zweifel and Nicolas Ammann in French; Tiago Hungerland and Robert Seggewiss in English. Messages open in that language; the incident record stays in English.
 2. Start with the **SKYFORGE · major** incident (selector in the top bar). All three audiences are informed. Open **Recipients** to see who gets each message, in which language and channel, and untick anyone who shouldn't. The gear next to it opens **Manage stakeholders**: type a name to add someone from the organisation (group, language, channel and role fill in automatically), or remove someone.
 3. For each audience, read the message until **Approve** unlocks, then approve. You approve your own language only; the other two follow it. Choose the **i** next to the audience name to see retrieval and translation accuracy.
-4. Choose **Simulate send**. Under **Also sent in** you can read the other two languages.
+4. Choose **Send** (simulated: nothing leaves the tool). Under **Also sent in** you can read the other two languages.
 5. Choose **Edit**, change a number or add a point with the **+** next to a subsection, and save. A pop-up confirms that the other two languages were updated. Approve your message again.
 6. Choose **Apply record update** and check that only the affected audiences are redrafted and need approval again. Your edits stay; a note flags any edited point whose record item changed.
 7. Switch to the **METEOFLOW · minor** incident: management is not informed.
@@ -19,7 +19,9 @@ Sign in with your Accenture account. If you see an access error, ask the team to
 
 Things to look for: wrong or missing facts, translations that don't match, and anything that slows you down under time pressure.
 
-**Without Tile AI** (the current state, and when you open `index.html` directly in Edge or Chrome): English comes straight from the record and German and French from bundled reference translations. Edits that only change numbers, times or codes carry over to the other languages. Any other new wording shows "Real LLM required → implementation phase" in the other languages; real translation, also live while typing, comes with an LLM in the implementation phase.
+**With a local LLM:** install [Ollama](https://ollama.com) and run `ollama pull qwen2.5:3b`. Start `serve.ps1` and open http://localhost:5173. The footer shows **Local AI on**. Incidents load instantly from the record and the bundled reference translations; when you edit or add a point, the local model translates your new wording into the other two languages (about 20–40 seconds without a GPU) instead of showing a placeholder. Machine-translated points get a note you tick after reading them under **Also sent in**. There is no AI review with the local model: with a 3B model no automatic meaning check proved reliable, so you check its translations yourself.
+
+**Without any AI** (the current state on Tile, and when you open `index.html` directly in Edge or Chrome): English comes straight from the record and German and French from bundled reference translations. Edits that only change numbers, times or codes carry over to the other languages. Any other new wording shows "Real LLM required → implementation phase" in the other languages; real translation, also live while typing, comes with an LLM in the implementation phase.
 
 ## Repo map
 

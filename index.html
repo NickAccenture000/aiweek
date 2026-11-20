@@ -80,6 +80,20 @@ ul { margin: 0; padding: 0; list-style: none; }
 .nav { position: sticky; top: 0; z-index: 20; background: rgba(245,245,247,.82); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid rgba(0,0,0,.06); }
 .nav .wrap { display: flex; align-items: center; gap: 14px; min-height: 52px; flex-wrap: wrap; padding-top: 6px; padding-bottom: 6px; }
 .nav .name { font: 600 15px var(--display); margin-right: auto; }
+/* Show sources: a switch, blue when on (blue = action, green is reserved for approved). */
+.toggle { display: inline-flex; gap: 8px; align-items: center; font-size: 13px; color: var(--ink-2); cursor: pointer; }
+.toggle input { appearance: none; width: 30px; height: 18px; border-radius: 9px; background: var(--line-2); position: relative; cursor: pointer; transition: background .2s; margin: 0; flex: none; }
+.toggle input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--card); box-shadow: 0 1px 2px rgba(0,0,0,.2); transition: transform .2s; }
+.toggle input:checked { background: var(--blue); }
+.toggle input:checked::after { transform: translateX(12px); }
+.toggle input:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .toggle input, .toggle input::after { transition: none; } }
+/* Source chip after a message point: the record item it cites. Hover or focus
+   highlights the item in the record; click scrolls to it. */
+.src { font: 500 10px var(--mono); color: var(--ink-3); background: var(--card); border: 1px solid var(--line-2); border-radius: 5px; padding: 1px 4px; margin-left: 4px; cursor: pointer; vertical-align: 2px; }
+.src:hover, .src:focus-visible { background: var(--hl); color: var(--ink); }
+.src.none { cursor: default; font-family: var(--sans); }
+.ritem.hl { background: var(--hl); }
 .nav select { border: 0; background: transparent; font-size: 13px; color: var(--ink-2); cursor: pointer; max-width: 46vw; }
 .me { display: inline-flex; align-items: center; gap: 8px; border: 0; background: var(--card); border-radius: 980px; padding: 4px 6px 4px 12px; font-size: 13px; font-weight: 500; cursor: pointer; box-shadow: 0 0 0 1px var(--line); }
 .me:hover { background: var(--well); }
@@ -236,7 +250,8 @@ ul { margin: 0; padding: 0; list-style: none; }
 .msec-head { display: flex; align-items: center; gap: 8px; }
 .msec li { position: relative; padding-left: 16px; margin-top: 4px; font-size: 15px; line-height: 1.45; }
 .msec li::before { content: ""; position: absolute; left: 3px; top: .62em; width: 4px; height: 4px; border-radius: 50%; background: var(--ink-3); }
-.msec li.flagged { background: linear-gradient(transparent 62%, rgba(255,149,0,.25) 62%); }
+/* Highlight the words only, at full letter height, also across line breaks. */
+.msec li.flagged > .mark { background: var(--hl); border-radius: 4px; padding: 1px 3px; margin: 0 -3px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
 .msec li.raw { color: var(--amber); font-style: italic; }
 .live-note { flex-basis: 100%; font-size: 12px; color: var(--ink-3); }
 .msec .rows { display: grid; gap: 6px; margin-top: 6px; }
@@ -252,6 +267,12 @@ ul { margin: 0; padding: 0; list-style: none; }
 .flags { margin-top: 14px; display: grid; gap: 6px; }
 .flag { display: flex; gap: 10px; align-items: flex-start; padding: 9px 12px; border-radius: 10px; background: var(--amber-bg); color: var(--amber); font-size: 13px; line-height: 1.4; cursor: pointer; }
 .flag input { margin: 2px 0 0; accent-color: var(--amber-dot); flex: none; }
+/* Machine-translation note: the texts to compare, readable in body colour. */
+.flag .mt-rows { display: grid; gap: 8px; margin-top: 8px; }
+.flag .mt-row { display: grid; gap: 3px; }
+.flag .mt-head { color: var(--amber); }
+.flag .mt-line { display: flex; gap: 8px; color: var(--ink); font-size: 14px; }
+.flag .mt-lang { font: 11px/1.9 var(--mono); color: var(--ink-2); flex: none; }
 .flag.blocking { background: var(--red-bg); color: var(--red); cursor: default; font-weight: 500; }
 .decide { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; }
 .decide .why { font-size: 13px; color: var(--ink-2); margin-left: 6px; }
@@ -360,6 +381,7 @@ footer { padding: 0 0 40px; font-size: 12px; color: var(--ink-3); }
     <div class="wrap">
       <span class="name">SMC Messages</span>
       <label><span class="visually-hidden">Incident</span><select id="scenario"></select></label>
+      <label class="toggle"><input type="checkbox" id="sources"> Show sources</label>
       <button class="me" type="button" id="me"></button>
     </div>
   </nav>
@@ -607,11 +629,12 @@ const S = {
   kpi: null,           // audience whose accuracy popover is open
   toast: null,
   changedItems: new Set(),
+  showSources: false,  // top-bar switch: record item IDs after each message point
   log: [],
   banner: "", bannerKind: "warn",
   focusNext: null,
   view: "messages",     // "messages" or "manage"
-  ai: { state: "checking", model: null, residency: null, reason: null, message: "", calls: 0, tokens: 0, cost: 0, costKnown: false }
+  ai: { state: "checking", provider: null, model: null, residency: null, reason: null, message: "", calls: 0, tokens: 0, cost: 0, costKnown: false }
 };
 const key = (aud, lang) => aud + ":" + lang;
 const msgOf = (aud, lang) => S.aud[aud] && S.aud[aud].msgs[lang];
@@ -740,7 +763,10 @@ function checksFor(m) {
   const P = S.aud[m.aud].points;
   const items = itemsFor(m.aud), ids = new Set(items.map((i) => i.id));
   const out = [];
-  const add = (id, label, ok, detail, blocking) => out.push({ id, label, ok, detail: ok ? "" : detail, blocking: !!blocking });
+  /* pts: the points a failed check is about, so the message can highlight them. */
+  const add = (id, label, ok, detail, blocking, pts) => out.push({ id, label, ok, detail: ok ? "" : detail, blocking: !!blocking, pts: ok ? [] : (pts || []).map((p) => p.id) });
+  const where = (p) => `${SEC_LABEL[m.lang][p.section]}, point ${ptsIn(m.aud, p.section).indexOf(p) + 1}`;
+  const quote = (ts) => ts.map((t) => `“${t}”`).join(", ");
   add("fresh", "Built from the current record", m.basis === basisOf(m.aud), "The record changed after this message was drafted.", true);
   const empty = P.filter((p) => !(p.text[m.lang] || "").trim()).length;
   add("complete", "No empty points", P.length > 0 && empty === 0, P.length ? `${plural(empty, "point is", "points are")} empty.` : "The message has no content.", true);
@@ -760,18 +786,47 @@ function checksFor(m) {
   const stale = P.filter((p) => p.edited && p.src.some((id) => (itemById(id)?.text ?? null) !== p.seen[id]));
   add("stale", "Your edits match the current record", stale.length === 0,
     `${[...new Set(stale.flatMap((p) => p.src))].join(", ")} changed in the record after your edit. Check ${stale.length === 1 ? "that point" : "those points"}.`);
-  const factBad = real.filter((p) => !recordFactsOk(p, m.lang));
-  add("facts", "Numbers and codes match the record", factBad.length === 0, `${plural(factBad.length, "point contains", "points contain")} numbers or codes not in the record.`);
+  const factBad = real.map((p) => ({ p, extra: notInRecord(p, m.lang) })).filter((x) => x.extra.length);
+  add("facts", "Numbers and codes match the record", factBad.length === 0,
+    factBad.map((x) => `${where(x.p)}: ${quote(x.extra)} ${x.extra.length === 1 ? "is" : "are"} not in the record.`).join(" "), false, factBad.map((x) => x.p));
   if (m.lang !== "en") {
-    const bad = [...new Set(real.filter((p) => !p.raw.en).flatMap((p) => { const t = factTokens(p.text[m.lang]); return [...factTokens(p.text.en)].filter((x) => !t.has(x)); }))];
-    add("match", "Numbers and codes match English", bad.length === 0, `Missing or changed: ${bad.join(", ")}.`);
+    /* Every number and code of the English point must appear unchanged in the translation. */
+    const bad = real.filter((p) => !p.raw.en).map((p) => ({ p, lost: lostTokens(p.text.en, p.text[m.lang]) })).filter((x) => x.lost.length);
+    add("match", "Numbers and codes match English", bad.length === 0,
+      bad.map((x) => `${where(x.p)}: ${quote(x.lost)} from the English ${x.lost.length === 1 ? "is" : "are"} missing or written differently.`).join(" ") + ` Write ${bad.length === 1 && bad[0].lost.length === 1 ? "it" : "them"} exactly as in the English.`,
+      false, bad.map((x) => x.p));
   }
+  /* No automatic check of the local model's meaning is reliable, so the SMC
+     reads what it wrote: a note to tick, naming the points and languages. */
+  /* The note shows the texts to compare, so the SMC can check without leaving
+     the card: on a message that is itself a machine translation, the original
+     it came from; on the author's own message, what the others will receive. */
+  const rows = [];
+  for (const p of P) {
+    const mt = p.mt || {};
+    if (mt[m.lang]) {
+      const src = p.lang0 && p.lang0 !== m.lang ? p.lang0 : "en";
+      const lines = [{ lang: src, text: p.text[src] }];
+      if (src !== "en" && m.lang !== "en" && p.text.en) lines.push({ lang: "en", text: p.text.en });
+      rows.push({ p, head: `${where(p)} · translated from ${LANG_NAME[src]}. The original:`, lines });
+    } else {
+      const langs = LANGS.filter((l) => l !== m.lang && mt[l]);
+      if (langs.length) rows.push({ p, head: `${where(p)} · sent as:`, lines: langs.map((l) => ({ lang: l, text: p.text[l] })) });
+    }
+  }
+  add("mt", "Check the machine translation", rows.length === 0,
+    `${aiName()} translated ${rows.length === 1 ? "this point" : "these points"} and no reference translation exists to verify ${rows.length === 1 ? "it" : "them"}. Tick when ${rows.length === 1 ? "it says" : "they say"} the same as the original, or choose Edit to correct.`,
+    false, rows.map((r) => r.p));
+  if (rows.length) out[out.length - 1].rows = rows.map((r) => ({ head: r.head, lines: r.lines }));
   return out;
 }
-const recordFactsOk = (p, lang) => {
+const notInRecord = (p, lang) => {
   const src = factTokens(p.src.map((id) => itemById(id)?.text || "").join(" "));
-  return [...factTokens(p.text[lang])].every((t) => src.has(t));
+  return [...factTokens(p.text[lang])].filter((t) => !src.has(t));
 };
+const recordFactsOk = (p, lang) => notInRecord(p, lang).length === 0;
+/* Numbers and codes of `from` that are missing from `to`. */
+const lostTokens = (from, to) => { const t = factTokens(to); return [...factTokens(from)].filter((x) => !t.has(x)); };
 
 /* Rule-based accuracy = share of per-point / per-item checks that pass. */
 function ruleScore(m) {
@@ -811,7 +866,7 @@ function accuracy(m) {
 function flagsFor(m) {
   const f = [];
   const isEn = m.lang === "en";
-  for (const c of m.checks) if (!c.ok) f.push({ id: "chk:" + c.id, text: `${c.label}: ${c.detail}`, blocking: c.blocking });
+  for (const c of m.checks) if (!c.ok) f.push({ id: "chk:" + c.id, text: `${c.label}: ${c.detail}`, blocking: c.blocking, rows: c.rows });
   const acc = accuracy(m);
   if (acc.v != null && acc.v < 100)
     f.push({ id: "acc", text: `${isEn ? "Retrieval" : "Translation"} accuracy ${acc.v}% (below 100%). Read closely before approving.` });
@@ -835,14 +890,14 @@ const refreshAll = (aud) => LANGS.forEach((l) => refreshMsg(msgOf(aud, l)));
 function resetDecision(m, reason) {
   if (m.status === "approved") log("System", "Approval withdrawn", { key: key(m.aud, m.lang), detail: reason });
   Object.assign(m, { status: "draft", approvedText: null, approvedAt: null, approvedBy: null, readMs: 0, acks: {},
-    aiScore: null, aiIssues: [], review: aiReady() ? "pending" : "off" });
+    aiScore: null, aiIssues: [], review: aiReviews() ? "pending" : "off" });
 }
 
 function gate(m) {
   if (m.status !== "draft") return { ok: false, why: "" };
   if (S.edit && S.edit.aud === m.aud) return { ok: false, why: "Save or cancel your edit first." };
   if (m.flags.some((f) => f.blocking)) return { ok: false, why: "Fix the issue above first." };
-  if (m.review === "pending") return { ok: false, why: "Waiting for the AI review." };
+  if (m.review === "pending") return { ok: false, why: `Waiting for the AI review${progressSuffix("review:" + m.aud)}.` };
   if (m.readMs < needMs(m)) return { ok: false, why: "Read the message to unlock Approve." };
   const unacked = m.flags.filter((f) => !f.blocking && !m.acks[f.id]).length;
   if (unacked) return { ok: false, why: `Tick ${unacked === 1 ? "the note" : `all ${unacked} notes`} above to confirm you checked ${unacked === 1 ? "it" : "them"}.` };
@@ -850,14 +905,162 @@ function gate(m) {
 }
 
 /* =====================================================================
-   Drafting and translation: rule-based (always available) and Tile AI
+   Drafting and translation: rule-based (always available), Tile AI, or a local LLM
    ===================================================================== */
 const aiReady = () => S.ai.state === "ready" && !EDIT_MODE;
+/* What the AI is used for. A large Tile model drafts, translates and reviews.
+   The small local model only translates wording that has no verified reference
+   translation (SMC edits, added points). Measured on this project's record:
+   its rewording of the record adds risk without adding facts, and no automatic
+   check of its translations was reliable (its own review, cross-language
+   embedding similarity and back-translation all misjudged good and bad
+   translations both ways). So locally the English is the record wording, DE/FR
+   come from the bundled references, and the SMC checks what the model wrote. */
+const aiDrafts = () => aiReady() && S.ai.provider === "tile";
+const aiReviews = () => aiReady() && S.ai.provider === "tile";
+const referenceFirst = () => S.ai.provider === "local";
+const aiName = () => S.ai.provider === "local" ? `local AI (${S.ai.model})` : "Tile AI";
+const TILE_TIMEOUT_MS = 45000;
+
+/* Local LLM through Ollama on this machine (http://localhost:11434).
+   Used only when the Tile SDK is not loaded, so the published tile never calls
+   localhost. It answers with the same shape as tile.ai.object, so every result
+   goes through the same validation as a Tile AI result. */
+const LocalAI = {
+  base: "http://localhost:11434",
+  /* Preference order: small multilingual models that handle German and French. */
+  chatPrefs: ["qwen2.5", "qwen3", "mistral-nemo", "mistral-small", "gemma3", "llama3.1", "llama3.2", "mistral"],
+  /* CPU inference is slow and Ollama queues requests, so the timeout starts only
+     when this page's request is actually sent, one at a time. */
+  timeoutMs: 300000,
+  queue: Promise.resolve(),
+
+  isEmbedModel(name) { return /embed|bge|minilm|e5-|paraphrase/i.test(name); },
+  pick(names, prefs, override) {
+    if (override) return names.find((n) => n === override || n.split(":")[0] === override) || null;
+    for (const p of prefs) { const hit = names.find((n) => n.split(":")[0] === p); if (hit) return hit; }
+    return names[0] || null;
+  },
+
+  async request(path, body, ms) {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), ms);
+    let res;
+    try {
+      res = await fetch(this.base + path, body
+        ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: ctl.signal }
+        : { signal: ctl.signal });
+    } catch (e) {
+      if (ctl.signal.aborted) throw Object.assign(new Error("timeout"), { timeout: true, timeoutS: Math.round(ms / 1000) });
+      throw new Error("the local LLM is not reachable; check that Ollama is running");
+    } finally { clearTimeout(t); }
+    let data = null;
+    try { data = await res.json(); } catch (e) { /* handled below */ }
+    if (!res.ok) throw new Error(`local LLM error ${res.status}: ${(data && data.error) || "request refused"}`);
+    if (!data) throw new Error("the local LLM returned no JSON");
+    return data;
+  },
+
+  /* Serialise calls: one request at a time keeps CPU-only machines responsive.
+     waiting: progress keys of calls not yet sent, so each can show its place. */
+  waiting: [],
+  enqueue(fn, pk) {
+    if (pk) { this.waiting.push(pk); progressQueue(this.waiting); }
+    const start = () => {
+      if (pk) { this.waiting = this.waiting.filter((x) => x !== pk); progressStart(pk); progressQueue(this.waiting); }
+      return fn();
+    };
+    const run = this.queue.then(start, start);
+    this.queue = run.catch(() => {});
+    return run;
+  },
+
+  /* Chat with streaming, so the page can show the answer growing. Resolves
+     with the same fields as a non-streamed answer. */
+  async chatStream(body, ms, onChunk) {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), ms);
+    const timedOut = () => Object.assign(new Error("timeout"), { timeout: true, timeoutS: Math.round(ms / 1000) });
+    try {
+      let res;
+      try {
+        res = await fetch(this.base + "/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, stream: true }), signal: ctl.signal });
+      } catch (e) {
+        if (ctl.signal.aborted) throw timedOut();
+        throw new Error("the local LLM is not reachable; check that Ollama is running");
+      }
+      if (!res.ok) {
+        let data = null;
+        try { data = await res.json(); } catch (e) { /* no JSON body */ }
+        throw new Error(`local LLM error ${res.status}: ${(data && data.error) || "request refused"}`);
+      }
+      const reader = res.body.getReader(), dec = new TextDecoder();
+      let buf = "", content = "", tokens = 0, last = null;
+      const take = (line) => {
+        if (!line.trim()) return;
+        const c = JSON.parse(line);
+        if (c.error) throw new Error(`local LLM error: ${c.error}`);
+        if (c.message && c.message.content) { content += c.message.content; tokens++; onChunk(content, tokens); }
+        if (c.done) last = c;
+      };
+      try {
+        for (;;) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buf += dec.decode(value, { stream: true });
+          let i;
+          while ((i = buf.indexOf("\n")) >= 0) { take(buf.slice(0, i)); buf = buf.slice(i + 1); }
+        }
+        take(buf);
+      } catch (e) {
+        if (ctl.signal.aborted) throw timedOut();
+        throw e;
+      }
+      return { model: last && last.model, message: { content }, prompt_eval_count: last ? last.prompt_eval_count : 0, eval_count: last ? last.eval_count : tokens };
+    } finally { clearTimeout(t); }
+  },
+
+  async available() {
+    const tags = await this.request("/api/tags", null, 2500);
+    const chat = (tags.models || []).map((m) => m.name).filter((n) => n && !this.isEmbedModel(n));
+    return { model: this.pick(chat, this.chatPrefs, new URLSearchParams(location.search).get("model")) };
+  },
+
+  /* temperature: 0 unless a retry needs to break a loop. maxTokens caps the
+     answer, so a model that starts repeating itself cannot block the queue. */
+  object({ prompt, schema, temperature = 0, maxTokens }, pk) {
+    return this.enqueue(async () => {
+      const r = await this.chatStream({
+        model: S.ai.model,
+        keep_alive: "30m", // stay loaded between record updates and edits; a reload costs seconds
+        format: schema,    // Ollama constrains the output to this JSON schema
+        options: maxTokens ? { temperature, num_predict: maxTokens } : { temperature },
+        messages: [
+          { role: "system", content: "Answer with one JSON object only, matching the given schema. No prose." },
+          /* No schema in the prompt: Ollama already enforces it through
+             format, and pasting it only adds reading time on a CPU. */
+          { role: "user", content: prompt }
+        ]
+      }, this.timeoutMs, (text, tokens) => progressChunk(pk, text, tokens));
+      let object = null;
+      try { object = JSON.parse((r.message && r.message.content) || ""); } catch (e) { throw new Error("the local LLM returned invalid JSON"); }
+      return { object, model: r.model, usage: { inputTokens: r.prompt_eval_count || 0, outputTokens: r.eval_count || 0 } };
+    }, pk);
+  }
+};
+
+/* One entry point for AI calls, whichever provider is active. */
+function aiCall(kind, args, pk) {
+  if (S.ai.provider === "local") return LocalAI[kind](args, pk);
+  return withTimeout(tile.ai[kind](args), TILE_TIMEOUT_MS);
+}
 const live = (aud, seq) => !!S.aud[aud] && S.aud[aud].seq === seq;
 /* seen: the record wording each source item had when the point was written,
    so a later record update can tell which edited points it touches. */
 const seenOf = (src) => Object.fromEntries(src.map((id) => [id, itemById(id)?.text ?? null]));
-const point = (id, section, src, lang, text) => ({ id, section, src, lang0: lang, text: { [lang]: text }, raw: {}, seen: seenOf(src), edited: false });
+/* mt: languages this point was machine-translated into by the local model,
+   with no reference translation to verify it; the SMC checks those. */
+const point = (id, section, src, lang, text) => ({ id, section, src, lang0: lang, text: { [lang]: text }, raw: {}, mt: {}, seen: seenOf(src), edited: false });
 
 function ruleDraft(aud) {
   return itemsFor(aud).map((it) => point(it.id, it.section, [it.id], "en", it.text));
@@ -900,12 +1103,12 @@ function demoTranslatePoint(p, from, to, before) {
 
 function withTimeout(promise, ms) {
   let t;
-  const timeout = new Promise((_, rej) => { t = setTimeout(() => rej(Object.assign(new Error("timeout"), { timeout: true })), ms); });
+  const timeout = new Promise((_, rej) => { t = setTimeout(() => rej(Object.assign(new Error("timeout"), { timeout: true, timeoutS: Math.round(ms / 1000) })), ms); });
   return Promise.race([promise, timeout]).finally(() => clearTimeout(t));
 }
 
 function aiErrorText(e) {
-  if (e && e.timeout) return "no answer within 45 s; the request may still finish in the background";
+  if (e && e.timeout) return `no answer within ${e.timeoutS || 45} s` + (S.ai.provider === "local" ? "; try a smaller model" : "; the request may still finish in the background");
   if (window.tile && tile.TileSvcError && e instanceof tile.TileSvcError) {
     if (e.status === 404) return "AI is not enabled for this tile";
     if (e.status === 429) return "the daily AI budget is used up";
@@ -931,10 +1134,60 @@ function meter(r) {
   renderSvc();
 }
 
-async function aiObject(prompt, schema) {
+/* Live progress of AI calls while the SMC waits. Keys: "draft:<aud>",
+   "tr:<aud>:<lang>", "review:<aud>". The local model streams, so the count of
+   finished points is read from its answer as it grows; Tile AI does not
+   stream structured answers, so there only the elapsed time is shown. */
+const PROG = new Map();
+/* base: points already finished by earlier requests of the same job. */
+function progressBegin(pk, total, unit, base = 0) {
+  const local = S.ai.provider === "local";
+  PROG.set(pk, { phase: local ? "queued" : "running", ahead: 0, text: "", tokens: 0, total: local ? total : 0, unit, base, t0: Date.now() });
+}
+function progressQueue(waiting) {
+  /* One call is running; each waiting call has its place in the queue ahead of it. */
+  waiting.forEach((pk, i) => { const p = PROG.get(pk); if (p) p.ahead = i + 1; });
+}
+function progressStart(pk) { const p = PROG.get(pk); if (p) { p.phase = "running"; p.t0 = Date.now(); } }
+function progressChunk(pk, text, tokens) { const p = pk && PROG.get(pk); if (p) { p.text = text; p.tokens = tokens; } }
+/* Finished JSON string values in a partial answer: one per point (keys, which
+   are followed by a colon, do not count). */
+function countJsonValues(t) {
+  let n = 0, inStr = false, esc = false, closed = false;
+  for (const c of t) {
+    if (inStr) { if (esc) esc = false; else if (c === "\\") esc = true; else if (c === '"') { inStr = false; closed = true; } continue; }
+    if (c === '"') { inStr = true; continue; }
+    if (closed && !/\s/.test(c)) { if (c !== ":") n++; closed = false; }
+  }
+  return n;
+}
+function progressSuffix(pk) {
+  const p = PROG.get(pk);
+  if (!p) return "";
+  if (p.phase === "queued") return ` · in the queue, ${plural(p.ahead, "request", "requests")} ahead`;
+  const parts = [];
+  /* Before the first token the model reads the whole prompt, which takes a while on a CPU. */
+  if (!p.tokens && S.ai.provider === "local") return ` · reading the input · ${Math.max(0, Math.round((Date.now() - p.t0) / 1000))} s`;
+  if (p.total) parts.push(`${Math.min(p.base + countJsonValues(p.text), p.total)} of ${p.total} ${p.unit}`);
+  if (p.tokens) parts.push(`${p.tokens} tokens`);
+  parts.push(`${Math.max(0, Math.round((Date.now() - p.t0) / 1000))} s`);
+  return " · " + parts.join(" · ");
+}
+/* Repaint only the progress texts, not the whole page. */
+setInterval(() => {
+  if (!PROG.size) return;
+  document.querySelectorAll("[data-progress]").forEach((el) => { el.textContent = el.dataset.base + progressSuffix(el.dataset.progress); });
+  for (const pk of PROG.keys()) if (pk.startsWith("review:")) { const aud = pk.slice(7); LANGS.forEach((l) => updateGate(aud, l)); }
+}, 500);
+
+async function aiObject(prompt, schema, prog, local) {
   const args = { prompt, schema };
-  if (S.ai.model) args.model = S.ai.model;
-  const r = await withTimeout(tile.ai.object(args), 45000);
+  if (S.ai.model && S.ai.provider === "tile") args.model = S.ai.model;
+  if (local && S.ai.provider === "local") Object.assign(args, local); // { temperature, maxTokens }: local model only
+  if (prog) progressBegin(prog.key, prog.total, prog.unit, prog.base || 0);
+  let r;
+  try { r = await aiCall("object", args, prog && prog.key); }
+  finally { if (prog) PROG.delete(prog.key); }
   meter(r);
   if (!r || typeof r.object !== "object" || !r.object) throw new Error("the AI returned no structured answer");
   return r.object;
@@ -946,70 +1199,169 @@ const LANG_TARGET = { en: "British English", de: "Swiss Standard German (write s
 
 async function aiDraft(aud) {
   const items = itemsFor(aud);
-  const schema = obj(Object.fromEntries(SECTIONS.map((s) => [s, arr(obj({ text: { type: "string" }, sources: arr({ type: "string" }) }))])));
+  /* One required field per record item ID: schema-constrained models (Tile AI,
+     Ollama) cannot skip or merge an item, and each point's source is known by
+     construction instead of trusting the model to cite it. Points keep the
+     item ID, as in ruleDraft, so record updates match them the same way. */
+  const schema = obj(Object.fromEntries(items.map((i) => [i.id, { type: "string" }])));
   const prompt = [
     "You draft one short stakeholder message for an air traffic control incident at a Swiss air navigation service provider.",
     `Audience: ${AUD[aud].label}. ${AUD[aud].brief}`,
     "Rules:",
-    "- Use only facts from the record items below. Do not add, infer, soften or speculate.",
+    "- For each record item ID, write one short, plain English point that states that item for this audience.",
+    "- Use only the facts of that item. Do not add, infer, soften or speculate.",
     "- Keep every number, time, sector, node and system name exactly as written.",
-    "- Write short, plain English bullets. Put each bullet in the section of the item it comes from.",
-    "- List the item IDs each bullet is based on in \"sources\".",
-    "- Cover every item below. Leave a section empty if no item belongs to it.",
     "",
     `Incident ${S.rec.id}, severity ${S.rec.severity}, record revision ${S.rec.revision}: ${S.rec.title}`,
     "Items (ID | section | text):",
     ...items.map((i) => `${i.id} | ${i.section} | ${i.text}`)
   ].join("\n");
-  const o = await aiObject(prompt, schema);
-  const pts = [];
-  for (const sec of SECTIONS) {
-    if (!Array.isArray(o[sec])) throw new Error(`the AI draft has no "${sec}" section`);
-    for (const b of o[sec]) {
-      if (!b || typeof b.text !== "string" || !b.text.trim()) continue;
-      const src = Array.isArray(b.sources) ? b.sources.filter((x) => typeof x === "string").map((x) => x.trim()) : [];
-      pts.push(point("P" + (pts.length + 1), sec, src, "en", b.text.trim()));
-    }
-  }
-  if (!pts.length) throw new Error("the AI draft is empty");
-  return pts;
+  const o = await aiObject(prompt, schema, { key: "draft:" + aud, total: items.length, unit: "points" });
+  return items.map((it) => {
+    const text = typeof o[it.id] === "string" ? o[it.id].trim() : "";
+    if (!text) throw new Error(`the AI draft has no text for item ${it.id}`);
+    return point(it.id, it.section, [it.id], "en", text);
+  });
 }
 
-async function aiTranslateTexts(texts, from, to) {
+const TRANSLATE_RULES = [
+  "- Keep all numbers, times, UTC, sector names, node names and upper-case system names exactly as written.",
+  "- Write every number as digits, exactly as in the source (3, never drei or trois).",
+  "- Do not add, drop or soften any information. Keep it as short as the source."
+];
+
+/* One point per request for the local model: the answer is a single text, so
+   a point with several sentences cannot come back split into several points,
+   and one failed point does not take the others with it. */
+async function aiTranslateOne(text, from, to, prog) {
+  const prompt = [
+    `Translate this point of an air traffic control stakeholder message from ${LANG_NAME[from]} into ${LANG_TARGET[to]}.`,
+    "It may have several sentences: translate all of them, as one text.",
+    "Rules:",
+    ...TRANSLATE_RULES,
+    "",
+    "Point:",
+    text
+  ].join("\n");
+  /* About 3 characters per token; a translation is rarely much longer than its source. */
+  const maxTokens = 60 + Math.ceil(text.length * 2 / 3);
+  let why = "";
+  /* At temperature 0 a small model that loops repeats the same loop every time,
+     so the one retry samples a little. This is not a retry of a refused request. */
+  for (const temperature of [0, 0.5]) {
+    try {
+      const o = await aiObject(prompt, obj({ translation: { type: "string" } }), prog, { temperature, maxTokens });
+      const t = typeof o.translation === "string" ? o.translation.trim() : "";
+      why = translationProblem(text, t, to);
+      if (!why) return t;
+    } catch (e) {
+      if (e.timeout || /not reachable/.test(e.message || "")) throw e;
+      why = aiErrorText(e);
+    }
+  }
+  throw new Error(why);
+}
+
+/* Cheap checks that catch the ways a small model fails at translating: no
+   answer, the source copied back instead of translated, or added commentary. */
+function translationProblem(src, out, to) {
+  if (!out) return `the ${LANG_NAME[to]} translation is empty`;
+  const norm = (x) => x.toLowerCase().replace(/\s+/g, " ").trim();
+  if (src.length > 25 && norm(out).includes(norm(src))) return `the ${LANG_NAME[to]} translation repeats the source instead of translating it`;
+  if (out.length > src.length * 2 + 40) return `the ${LANG_NAME[to]} translation adds text that is not in the source`;
+  return "";
+}
+
+/* Returns one text per input; locally a failed point is null (the caller
+   shows the placeholder for it) and the reasons are in .failed. */
+async function aiTranslateTexts(texts, from, to, pk) {
+  if (S.ai.provider === "local") {
+    const out = [], failed = [];
+    for (let i = 0; i < texts.length; i++) {
+      try { out.push(await aiTranslateOne(texts[i], from, to, pk && { key: pk, total: texts.length, unit: "points", base: i })); }
+      catch (e) {
+        if (e.timeout || /not reachable/.test(e.message || "")) throw e; // the model is gone: the rest would fail too
+        out.push(null); failed.push(aiErrorText(e));
+      }
+    }
+    if (out.every((x) => x == null)) throw new Error(failed[0] || `the ${LANG_NAME[to]} translation failed`);
+    out.failed = failed;
+    return out;
+  }
   const prompt = [
     `Translate each point of this air traffic control stakeholder message from ${LANG_NAME[from]} into ${LANG_TARGET[to]}.`,
     "Rules:",
     "- Return exactly one translation per point, in the same order.",
-    "- Keep all numbers, times, UTC, sector names, node names and upper-case system names exactly as written.",
-    "- Do not add, drop or soften any information. Keep it as short as the source.",
+    ...TRANSLATE_RULES,
     "",
     "Points (JSON array):",
     JSON.stringify(texts)
   ].join("\n");
-  const o = await aiObject(prompt, obj({ points: arr({ type: "string" }) }));
+  const o = await aiObject(prompt, obj({ points: arr({ type: "string" }) }), pk && { key: pk, total: texts.length, unit: "points" });
   if (!Array.isArray(o.points) || o.points.length !== texts.length) throw new Error(`the ${LANG_NAME[to]} translation changed the number of points`);
   const out = o.points.map((x) => typeof x === "string" ? x.trim() : "");
   if (out.some((x) => !x)) throw new Error(`the ${LANG_NAME[to]} translation has empty points`);
+  /* A lost number or code is not repaired here: the rule check names the
+     point for the SMC. (A second "fix it" call made small models copy the
+     hint into the text and garble the wording, which is worse.) */
   return out;
 }
 
+/* The review judges each point only against its own reference: English
+   against the record item(s) it cites, German and French against the English
+   point. The record is the single source of truth, so the reviewer has no way
+   to ask for facts the record does not hold. Whether every record item is
+   covered is the rule checks' job, not the reviewer's. The score is the share
+   of points the reviewer confirmed, so it always matches the listed issues.
+   Returns the same shape as before: { [lang]: { score, issues } }. */
 async function aiReview(aud, langs) {
-  const R = obj({ score: { type: "number" }, issues: arr(obj({ section: { type: "string", enum: SECTIONS }, index: { type: "integer" }, problem: { type: "string" } })) });
-  const schema = obj(Object.fromEntries(langs.map((l) => [l, R])));
-  const show = (l) => JSON.stringify(Object.fromEntries(SECTIONS.map((s) => [s, ptsIn(aud, s).map((p) => p.text[l])])));
+  const rows = [];
+  for (const s of SECTIONS) ptsIn(aud, s).forEach((p, index) => rows.push({ p, s, index, k: "p" + (rows.length + 1) }));
+  const refOf = (r, l) => {
+    if (l !== "en") return r.p.text.en || "";
+    const items = r.p.src.map(itemById).filter(Boolean);
+    return items.length ? items.map((i) => i.text).join(" ") : null; // SMC-added point: no record item to compare with
+  };
+  const plan = Object.fromEntries(langs.map((l) => [l, rows.filter((r) => refOf(r, l) && (r.p.text[l] || "").trim())]));
+  const verdict = obj({ ok: { type: "boolean" }, problem: { type: "string" } });
+  const schema = obj(Object.fromEntries(langs.map((l) => [l, obj(Object.fromEntries(plan[l].map((r) => [r.k, verdict])))])));
   const prompt = [
-    "You are a strict reviewer of stakeholder messages for an air traffic control incident. Score each message from 0 to 100.",
-    "- \"en\" (information retrieval accuracy): 100 means every statement is supported by the record items and nothing relevant is missing. Lower it for any unsupported, changed or missing fact.",
-    "- \"de\" and \"fr\" (translation accuracy): 100 means the translation says exactly what the English says. Lower it for any change of meaning, omission, addition, or changed number, time or name.",
-    "- List each problem with its section and zero-based bullet index, in one short English sentence. Return an empty list when there is none.",
+    "You check stakeholder messages for an air traffic control incident, one point at a time.",
+    "Compare each point only with its own reference text:",
+    "- \"en\" points: the reference is the incident record item. The record is the single source of truth.",
+    "- \"de\" and \"fr\" points: the reference is the English point it was translated from.",
+    "Set ok to true when the point states the same facts as its reference.",
+    "Set ok to false only when the point changes, adds or drops a fact, number, time, name or code of its reference, or the translation changes the meaning.",
+    "Never ask for information that is not in the reference. Rewording, word order, and local spellings of place names (Geneva, Genf, Genève) are fine.",
+    "If a point and its reference say the same thing, ok is true.",
+    "problem: when ok is false, one short English sentence naming what differs (for example: \"says 4 minutes, the reference says 3\"). Do not just repeat the two texts. When ok is true, an empty string.",
     "",
-    `Audience: ${AUD[aud].label}. ${AUD[aud].brief}`,
-    "Record items (ID | section | text):",
-    ...itemsFor(aud).map((i) => `${i.id} | ${i.section} | ${i.text}`),
-    "",
-    ...langs.map((l) => `${l} message: ${show(l)}`)
+    ...langs.flatMap((l) => [`${l} points (key | reference | point):`, ...plan[l].map((r) => `${r.k} | ${refOf(r, l)} | ${r.p.text[l]}`), ""])
   ].join("\n");
-  return aiObject(prompt, schema);
+  const o = await aiObject(prompt, schema, { key: "review:" + aud, total: langs.reduce((n, l) => n + plan[l].length, 0), unit: "points checked" });
+  /* A problem that only quotes the point and its reference ("X vs. X") names
+     no difference. Small models do this; it is not actionable for the SMC. */
+  const norm = (x) => String(x || "").toLowerCase().replace(/[\s.,:;!?'"«»„“”‘’()\-–]+/g, " ").trim();
+  const namesDifference = (problem, r, l) => {
+    let rest = norm(problem);
+    for (const t of [norm(r.p.text[l]), norm(refOf(r, l))]) if (t) rest = rest.split(t).join(" ");
+    return rest.replace(/\b(vs|versus|and|compared to|instead of|reference|point)\b/g, " ").replace(/\s+/g, "").length >= 3;
+  };
+  return Object.fromEntries(langs.map((l) => {
+    const got = o[l] && typeof o[l] === "object" ? o[l] : null;
+    if (!got || !plan[l].length) return [l, { score: got ? 100 : null, issues: [] }];
+    const issues = [];
+    let ok = 0;
+    for (const r of plan[l]) {
+      const v = got[r.k];
+      const problem = v && typeof v.problem === "string" ? v.problem.trim() : "";
+      /* A "not ok" without a stated difference is not actionable for the SMC, so it counts as confirmed. */
+      const same = l === "en" && norm(r.p.text.en) === norm(refOf(r, l)); // verbatim from the record: nothing can differ
+      if (v && v.ok === false && problem && !same && namesDifference(problem, r, l)) issues.push({ section: r.s, index: r.index, problem });
+      else ok++;
+    }
+    return [l, { score: Math.round(100 * ok / plan[l].length), issues }];
+  }));
 }
 
 async function generateAudience(aud) {
@@ -1024,15 +1376,15 @@ async function generateAudience(aud) {
   render();
 
   let pts = null, origin = "rule", note = "";
-  if (aiReady()) {
+  if (aiDrafts()) {
     try { pts = await aiDraft(aud); origin = "ai"; }
     catch (e) { note = `AI draft failed (${aiErrorText(e)}). Showing the rule-based draft.`; log("System", "AI draft failed", { key: key(aud, "en"), detail: aiErrorText(e) }); }
   }
   if (!live(aud, seq)) return;
   A.points = pts || ruleDraft(aud);
-  Object.assign(A.msgs.en, { status: "draft", origin, note, review: aiReady() ? "pending" : "off" });
+  Object.assign(A.msgs.en, { status: "draft", origin, note, review: aiReviews() ? "pending" : "off" });
   refreshMsg(A.msgs.en);
-  log(origin === "ai" ? "AI" : "System", "English draft created", { key: key(aud, "en"), detail: `${origin === "ai" ? "Tile AI" : "rule-based"}, from record revision ${A.msgs.en.rev}` });
+  log(origin === "ai" ? "AI" : "System", "English draft created", { key: key(aud, "en"), detail: `${origin === "ai" ? aiName() : "rule-based"}, from record revision ${A.msgs.en.rev}` });
   render();
 
   await translatePoints(aud, "en", ["de", "fr"], A.points.map((p) => ({ p, before: null })), seq);
@@ -1073,31 +1425,64 @@ async function translatePoints(aud, from, targets, changes, seq, keepOrigin = fa
   /* Withdraw first, so the log shows which approvals the change cost. */
   targets.forEach((l) => { resetDecision(A.msgs[l], `the ${LANG_NAME[from]} text changed`); A.msgs[l].status = "generating"; });
   render();
-  const results = await Promise.all(targets.map(async (to) => {
-    if (!aiReady() || !changes.length) return { to, texts: null, note: "" };
-    try { return { to, texts: await aiTranslateTexts(changes.map((c) => c.p.text[from]), from, to), note: "" }; }
+  /* srcOf(i): the text the model translates for change i. Normally the edited
+     language; see the English pivot below. */
+  const translateTo = async (to, srcOf, srcLang) => {
+    /* Locally, verified text comes first: the bundled reference wording or a
+       number/code swap. Only points with neither go to the model. */
+    const plan = changes.map((c) => referenceFirst() ? demoTranslatePoint(c.p, from, to, c.before) : null);
+    const need = changes.map((_, i) => i).filter((i) => !plan[i] || plan[i].how === "raw");
+    if (!aiReady() || !need.length) return { to, plan, need: [], texts: null, note: "" };
+    try { return { to, plan, need, texts: await aiTranslateTexts(need.map(srcOf), srcLang, to, `tr:${aud}:${to}`), note: "" }; }
     catch (e) {
       log("System", "AI translation failed", { key: key(aud, to), detail: aiErrorText(e) });
-      return { to, texts: null, note: `AI translation failed (${aiErrorText(e)}).` };
+      return { to, plan, need: [], texts: null, note: `AI translation failed (${aiErrorText(e)}).` };
     }
-  }));
+  };
+  /* The text a result gives change i (AI, reference, swap or placeholder). */
+  const pick = (r, i) => {
+    const n = r.texts ? r.need.indexOf(i) : -1;
+    if (n >= 0 && r.texts[n] != null) return { text: r.texts[n], how: "ai" };
+    return r.plan[i] || demoTranslatePoint(changes[i].p, from, r.to, changes[i].before);
+  };
+  let results;
+  if (referenceFirst() && from !== "en" && targets.includes("en") && targets.length > 1) {
+    /* English pivot for the local model: measured, it translates between
+       English and German or French well, but from German straight into French
+       it copied the German back or wrote commentary. So an edit in DE or FR goes
+       to English first, and the third language is translated from that English. */
+    const en = await translateTo("en", (i) => changes[i].p.text[from], from);
+    const enText = changes.map((_, i) => { const x = pick(en, i); return x.how === "raw" ? null : x.text; });
+    const rest = await Promise.all(targets.filter((l) => l !== "en").map((to) =>
+      translateTo(to, (i) => enText[i] ?? changes[i].p.text[from], enText.every((x) => x != null) ? "en" : from)));
+    results = [en, ...rest];
+  } else {
+    results = await Promise.all(targets.map((to) => translateTo(to, (i) => changes[i].p.text[from], from)));
+  }
   if (!live(aud, seq) || A.tgen !== tg) return null;
   const sum = { ai: 0, reference: 0, swap: 0, raw: new Set() };
   const initial = from === "en" && changes.every((c) => !c.before);
   for (const r of results) {
     changes.forEach((c, i) => {
-      let text, how;
-      if (r.texts) { text = r.texts[i]; how = "ai"; }
-      else ({ text, how } = demoTranslatePoint(c.p, from, r.to, c.before));
+      const { text, how } = pick(r, i);
       c.p.text[r.to] = text;
       c.p.raw[r.to] = how === "raw";
+      (c.p.mt ||= {})[r.to] = how === "ai" && S.ai.provider === "local";
       if (how === "raw") sum.raw.add(c.p.id); else sum[how]++;
     });
     const m = A.msgs[r.to];
     const origin = keepOrigin ? m.origin : r.texts ? "ai" : initial ? "demo" : "carried";
-    Object.assign(m, { status: "draft", origin, from, note: r.note, readMs: 0, acks: {}, aiScore: null, aiIssues: [], review: aiReady() ? "pending" : "off" });
+    const failedPts = r.texts && r.texts.failed ? r.texts.failed : [];
+    if (failedPts.length) {
+      r.note = `AI translation failed for ${plural(failedPts.length, "point", "points")} (${failedPts[0]}).`;
+      log("System", "AI translation failed", { key: key(aud, r.to), detail: `${plural(failedPts.length, "point", "points")}: ${failedPts[0]}` });
+    }
+    Object.assign(m, { status: "draft", origin, from, note: r.note, readMs: 0, acks: {}, aiScore: null, aiIssues: [], review: aiReviews() ? "pending" : "off" });
+    const done = r.texts ? r.texts.filter((x) => x != null).length : 0;
+    const viaAi = r.texts ? `${aiName()}, ${plural(done, "point", "points")}` + (r.to !== "en" && r.need.length && referenceFirst() && from !== "en" && targets.includes("en") ? " (via the English)" : "")
+      + (r.need.length < changes.length ? "; the rest from reference wording" : "") : null;
     log(r.texts ? "AI" : "System", initial ? `${LANG_NAME[r.to]} translation created` : `${LANG_NAME[r.to]} updated from ${LANG_NAME[from]}`,
-      { key: key(aud, r.to), detail: r.texts ? "Tile AI" : initial ? "reference translation (Tile AI off)" : "rule-based: reference wording or number swap" });
+      { key: key(aud, r.to), detail: viaAi || (initial ? "reference translation" : "rule-based: reference wording or number swap") });
   }
   refreshAll(aud);
   render();
@@ -1105,7 +1490,7 @@ async function translatePoints(aud, from, targets, changes, seq, keepOrigin = fa
 }
 
 async function reviewAudience(aud, seq) {
-  if (!aiReady() || !live(aud, seq)) return;
+  if (!aiReviews() || !live(aud, seq)) return;
   const A = S.aud[aud];
   const langs = LANGS.filter((l) => A.msgs[l].status === "draft" && A.points.some((p) => (p.text[l] || "").trim()));
   if (!langs.length) return;
@@ -1404,10 +1789,12 @@ function renderSvc() {
   /* Shown only with Tile AI on (usage counters); without it, each message's
      note says where its text came from. */
   el.hidden = a.state !== "ready";
-  if (a.state === "checking") el.textContent = "Tile AI: checking";
-  else if (a.state === "ready") el.textContent = `Tile AI on · ${plural(a.calls, "call", "calls")} · ${a.tokens.toLocaleString("en-US")} tokens` + (a.costKnown ? ` · $${a.cost.toFixed(4)}` : "") + (EDIT_MODE ? " · paused in edit mode" : "");
+  if (a.state === "checking") el.textContent = "AI: checking";
+  else if (a.state === "ready") el.textContent = `${a.provider === "local" ? "Local AI on" : "Tile AI on"} · ${plural(a.calls, "call", "calls")} · ${a.tokens.toLocaleString("en-US")} tokens` + (a.costKnown ? ` · $${a.cost.toFixed(4)}` : "") + (EDIT_MODE ? " · paused in edit mode" : "");
   else el.textContent = a.message;
-  el.title = a.state === "ready" ? `Model: ${a.model || "tile default"}${a.residency ? " (" + a.residency.toUpperCase() + ")" : ""}` : "";
+  el.title = a.state !== "ready" ? ""
+    : a.provider === "local" ? `Local model: ${a.model} (runs on this machine)`
+    : `Model: ${a.model || "tile default"}${a.residency ? " (" + a.residency.toUpperCase() + ")" : ""}`;
 }
 
 function renderNav() {
@@ -1427,6 +1814,7 @@ function renderHero() {
     h("div", { class: "facts" }, h("span", { class: "sev " + r.severity }, SEV_LABEL.en[r.severity]), h("span", null, routing))
   ];
   if (S.ai.reason === "not-enabled") kids.push(h("p", { class: "setup" }, "Admin setup: if you are not approved yet, choose Request AI access in Tile and wait for approval. Then enable AI for this tile under Manage → Services, acknowledge provider egress, and reload."));
+  if (S.ai.reason === "local-no-model") kids.push(h("p", { class: "setup" }, "Local AI setup: Ollama is running but has no chat model. Run ollama pull qwen2.5:3b, then reload."));
   if (EDIT_MODE) kids.push(h("p", { class: "modeline" }, "Edit mode: drafting, approving and sending are paused."));
   if (S.banner) kids.push(h("div", { class: "banner" + (S.bannerKind === "info" ? " info" : "") }, S.banner));
   $("hero").replaceChildren(...kids);
@@ -1472,7 +1860,7 @@ function renderRecord() {
     const items = r.items.filter((i) => i.section === s);
     return h("div", { class: "rsec " + s },
       h("h3", null, SEC_LABEL.en[s]),
-      items.length ? h("ul", null, items.map((it) => h("li", { class: "ritem" + (S.changedItems.has(it.id) ? " changed" : "") },
+      items.length ? h("ul", null, items.map((it) => h("li", { class: "ritem" + (S.changedItems.has(it.id) ? " changed" : ""), id: "rec-" + it.id },
         h("p", null, it.text),
         h("p", { class: "meta" }, `${it.id} · ${it.aud.map((a) => AUD[a].short).join(" ")}`))))
         : h("p", { class: "ritem empty" }, "Nothing reported."));
@@ -1494,12 +1882,34 @@ function plusIcon() {
     sv("path", { d: "M10 6v8M6 10h8", stroke: "currentColor", "stroke-width": "1.6", "stroke-linecap": "round" }));
 }
 
+/* Source chips for one point, shown while "Show sources" is on. A point the
+   SMC added cites no record item, so it says so instead of showing nothing. */
+function sourceChips(p) {
+  if (!S.showSources) return null;
+  if (!p.src.length) return h("span", { class: "src none", title: "Added by the SMC: not based on a record item" }, "added");
+  return p.src.map(srcChip);
+}
+function srcChip(id) {
+  const target = () => document.getElementById("rec-" + id);
+  const motion = () => matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+  return h("button", { class: "src", type: "button", "aria-label": `Show record item ${id}`, title: itemById(id)?.text || "No longer in the record",
+    onmouseenter: () => target()?.classList.add("hl"), onmouseleave: () => target()?.classList.remove("hl"),
+    onfocus: () => target()?.classList.add("hl"), onblur: () => target()?.classList.remove("hl"),
+    onclick: () => target()?.scrollIntoView({ block: "center", behavior: motion() }) }, id);
+}
+
 function renderMessage(aud, lang) {
   const k = key(aud, lang), m = msgOf(aud, lang), lbl = SEC_LABEL[lang];
-  if (!m || m.status === "generating")
-    return h("div", { class: "msg" }, h("p", { class: "placeholder" }, lang === "en" && !S.aud[aud]?.points.length ? `Drafting from record revision ${S.rec.revision}…` : `Translating into ${LANG_NAME[lang]}…`));
+  if (!m || m.status === "generating") {
+    /* Translations wait for the English draft, so until it exists every language shows the draft's progress. */
+    const drafting = !S.aud[aud]?.points.length;
+    const base = drafting ? (lang === "en" ? `Drafting from record revision ${S.rec.revision}` : `Drafting in English from record revision ${S.rec.revision}`) : `Translating into ${LANG_NAME[lang]}`;
+    const pk = drafting ? "draft:" + aud : `tr:${aud}:${lang}`;
+    return h("div", { class: "msg" }, h("p", { class: "placeholder", "data-progress": pk, "data-base": base }, base + (progressSuffix(pk) || "…")));
+  }
   const editing = S.edit && S.edit.aud === aud && S.edit.lang === lang ? S.edit : null;
   const issueAt = new Set(m.aiIssues.map((x) => x.section + ":" + x.index));
+  const ruleAt = new Set((m.checks || []).filter((c) => !c.ok).flatMap((c) => c.pts || []));
   const sections = SECTIONS.filter((s) => editing || ptsIn(aud, s).length).map((s) => h("section", { class: "msec " + s },
     h("div", { class: "msec-head" },
       h("h3", null, lbl[s]),
@@ -1507,7 +1917,9 @@ function renderMessage(aud, lang) {
     editing
       ? h("div", { class: "rows" }, editing.secs[s].map((row, i) => h("textarea", { rows: "1", "data-fid": `edit:${aud}:${s}:${i}`,
           "aria-label": `${lbl[s]}, point ${i + 1}`, placeholder: "New point", oninput: (e) => { row.text = e.target.value; } }, row.text)))
-      : h("ul", null, ptsIn(aud, s).map((p, i) => h("li", { class: (p.raw[lang] ? "raw" : "") + (issueAt.has(s + ":" + i) ? " flagged" : "") }, p.text[lang] || "")))));
+      : h("ul", null, ptsIn(aud, s).map((p, i) => issueAt.has(s + ":" + i) || ruleAt.has(p.id)
+        ? h("li", { class: (p.raw[lang] ? "raw" : "") + " flagged" }, h("span", { class: "mark" }, p.text[lang] || ""), sourceChips(p))
+        : h("li", { class: p.raw[lang] ? "raw" : "" }, p.text[lang] || "", sourceChips(p))))));
   return h("article", { class: "msg" + (m.status === "approved" ? " approved" : "") + (editing ? " editing" : ""), "data-key": editing ? null : k,
       "aria-label": `${AUD[aud].label} message in ${LANG_NAME[lang]}` },
     h("p", { class: "from" }, `${S.rec.system} · ${S.rec.id}`),
@@ -1516,7 +1928,7 @@ function renderMessage(aud, lang) {
 }
 
 const ORIGIN_TEXT = (m) => ({
-  ai: m.lang === "en" && m.from === "en" ? "Drafted by Tile AI" : `Translated from ${LANG_NAME[m.from]} by Tile AI`,
+  ai: m.lang === "en" && m.from === "en" ? `Drafted by ${aiName()}` : `Translated from ${LANG_NAME[m.from]} by ${aiName()}`,
   rule: "Taken from the record",
   demo: "Reference translation",
   edited: `Edited by ${S.user ? S.user.name : "the SMC"}`,
@@ -1533,7 +1945,10 @@ function renderDecision(aud, lang) {
   if (m.flags.length && m.status !== "approved" && !editing) out.push(h("div", { class: "flags" }, m.flags.map((f) => f.blocking
     ? h("p", { class: "flag blocking" }, f.text)
     : h("label", { class: "flag" }, h("input", { type: "checkbox", checked: !!m.acks[f.id],
-        onchange: (e) => { if (e.target.checked) m.acks[f.id] = true; else delete m.acks[f.id]; updateGate(aud, lang); } }), h("span", null, f.text)))));
+        onchange: (e) => { if (e.target.checked) m.acks[f.id] = true; else delete m.acks[f.id]; updateGate(aud, lang); } }),
+        h("span", null, f.text, f.rows ? h("span", { class: "mt-rows" }, f.rows.map((r) => h("span", { class: "mt-row" },
+          h("span", { class: "mt-head" }, r.head),
+          r.lines.map((x) => h("span", { class: "mt-line", lang: x.lang }, h("span", { class: "mt-lang" }, x.lang.toUpperCase()), x.text || ""))))) : null)))));
   const row = h("div", { class: "decide" });
   const edit = () => startEdit(aud);
   if (editing) {
@@ -1627,7 +2042,9 @@ function renderGroup(aud) {
         S.kpi === aud ? kpiPanel(aud) : null),
       h("div", { class: "sendbox" },
         h("span", { class: "why" + (st.sent ? " done" : "") }, st.why),
-        h("button", { class: "btn dark", type: "button", disabled: !st.ok || EDIT_MODE, onclick: () => simulateSend(aud) }, "Simulate send"))),
+        /* Short label by team request; the tooltip, screen-reader name, banner and log still say "simulated". */
+        h("button", { class: "btn dark", type: "button", disabled: !st.ok || EDIT_MODE, onclick: () => simulateSend(aud),
+          title: "Simulated send: no message leaves this tool", "aria-label": "Send (simulated)" }, "Send"))),
     renderMessage(aud, lang),
     ...renderDecision(aud, lang),
     alsoRow(aud));
@@ -1842,10 +2259,7 @@ setInterval(() => {
    ===================================================================== */
 async function detectAi() {
   const off = "Tile AI off: English comes from the record, German and French from bundled reference translations. No AI review.";
-  if (window.__tileLoadFailed || !window.tile || !tile.ai) {
-    Object.assign(S.ai, { state: "demo", message: off });
-    return;
-  }
+  if (window.__tileLoadFailed || !window.tile || !tile.ai) return detectLocalAi(off);
   try {
     const a = await tile.ai.available();
     if (!a.ok) {
@@ -1856,9 +2270,21 @@ async function detectAi() {
     const chat = (a.models || []).filter((m) => m.kind === "chat");
     const eu = chat.find((m) => m.residency === "eu");
     const dflt = chat.find((m) => m.id === a.default);
-    Object.assign(S.ai, { state: "ready", model: eu ? eu.id : null, residency: (eu || dflt || {}).residency || null });
+    Object.assign(S.ai, { state: "ready", provider: "tile", model: eu ? eu.id : null, residency: (eu || dflt || {}).residency || null });
   } catch (e) {
     Object.assign(S.ai, { state: "off", message: `Tile AI check failed. ${off.replace("Tile AI off: ", "")}` });
+  }
+}
+
+/* Outside Tile: use a local Ollama if one answers, otherwise keep the
+   no-AI behaviour (record wording, reference translations, placeholders). */
+async function detectLocalAi(off) {
+  try {
+    const a = await LocalAI.available();
+    if (!a.model) { Object.assign(S.ai, { state: "off", reason: "local-no-model", message: off }); return; }
+    Object.assign(S.ai, { state: "ready", provider: "local", model: a.model, residency: "local" });
+  } catch (e) {
+    Object.assign(S.ai, { state: "demo", message: off });
   }
 }
 
@@ -1904,6 +2330,7 @@ let aiReadyPromise = null;
   SCENARIOS.forEach((sc, i) => sel.append(h("option", { value: String(i) }, `${sc.record.system} · ${sc.record.severity}`)));
   sel.addEventListener("change", () => startScenario(Number(sel.value)));
   $("me").addEventListener("click", showLogin);
+  $("sources").addEventListener("change", (e) => { S.showSources = e.target.checked; render(); });
   $("managebtn").append(gearIcon());
   $("managebtn").addEventListener("click", openManage);
   $("manageback").addEventListener("click", closeManage);
@@ -1917,7 +2344,7 @@ let aiReadyPromise = null;
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && S.kpi) { const a = S.kpi; S.kpi = null; renderCards(); document.querySelector(`[data-fid="kpi:${a}"]`)?.focus(); } });
   aiReadyPromise = detectAi();
   await aiReadyPromise;
-  log("System", "Session started", { detail: S.ai.state === "ready" ? `Tile AI ${S.ai.model || "default model"}` : "Tile AI off" });
+  log("System", "Session started", { detail: S.ai.state !== "ready" ? "AI off" : S.ai.provider === "local" ? aiName() : `Tile AI ${S.ai.model || "default model"}` });
   renderSvc();
 })();
 </script>
