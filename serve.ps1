@@ -1,4 +1,5 @@
-# Optional tiny static server (only used for the in-app browser preview; index.html also works by double-click).
+# Tiny static server for http://localhost:5173. Needed for local AI: Ollama refuses pages opened from disk
+# (file://). Without local AI, index.html also works by double-click.
 # Usage: powershell -ExecutionPolicy Bypass -File serve.ps1 [-Port 5173]
 param([int]$Port = 5173)
 $ErrorActionPreference = "Stop"
